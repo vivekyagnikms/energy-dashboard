@@ -13,6 +13,15 @@ _HISTORY_COLOR = "#F59E0B"  # amber, matches theme primaryColor
 _FORECAST_COLOR = "#60A5FA"  # blue, distinct from history
 _BAND_COLOR = "rgba(96, 165, 250, 0.18)"
 
+# Industry events worth annotating on multi-year production charts. Each
+# event is a (year, label) tuple; we draw a faint vertical line + label
+# only when the event year falls inside the chart's x-range.
+_EVENT_ANNOTATIONS: tuple[tuple[int, str], ...] = (
+    (2014, "OPEC oversupply →\noil price collapse"),
+    (2020, "COVID demand shock"),
+    (2022, "OPEC+ cuts /\nreshoring demand"),
+)
+
 
 def _y_axis_label(product: str, unit: str) -> str:
     pretty = "Crude Oil" if product == Product.CRUDE_OIL else "Natural Gas"
@@ -101,6 +110,28 @@ def render_history_forecast_chart(
                 hovertemplate="<b>%{x}</b><br>%{y:,.0f}<extra>Forecast</extra>",
             )
         )
+
+    # Industry-context event annotations (faint vertical lines + labels
+    # for years like 2014/2020/2022). Helps non-domain users see why a
+    # dip / spike happened. Only drawn when the event year is in range.
+    x_min = int(history["year"].min())
+    x_max = int(history["year"].max())
+    if not fc_df.empty:
+        x_max = max(x_max, int(fc_df["year"].max()))
+    for event_year, event_label in _EVENT_ANNOTATIONS:
+        if x_min <= event_year <= x_max:
+            fig.add_vline(
+                x=event_year,
+                line_width=1,
+                line_dash="dot",
+                line_color="rgba(255,255,255,0.25)",
+                annotation_text=event_label,
+                annotation_position="bottom",
+                annotation=dict(
+                    font=dict(size=9, color="rgba(255,255,255,0.55)"),
+                    yshift=6,
+                ),
+            )
 
     # Vertical marker at the selected year.
     fig.add_vline(
