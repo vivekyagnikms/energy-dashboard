@@ -133,6 +133,18 @@ def render_sidebar(df: pd.DataFrame) -> Selection:
 
     st.sidebar.divider()
 
+    # --- Refresh ---
+    if st.sidebar.button(
+        "🔄 Refresh data from EIA",
+        help="Force a live re-fetch from the EIA API. Bypasses the 24h parquet cache.",
+        use_container_width=True,
+    ):
+        st.cache_data.clear()
+        st.toast("Cleared cache — refetching from EIA…", icon="🔄")
+        st.rerun()
+
+    st.sidebar.divider()
+
     # --- About ---
     with st.sidebar.expander("ℹ️  About this dashboard"):
         st.markdown(

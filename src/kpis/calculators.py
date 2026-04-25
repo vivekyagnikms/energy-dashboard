@@ -68,7 +68,10 @@ class KPISet:
     yoy_growth_rate: float | None  # decimal (0.10 = +10%)
     five_year_cagr: float | None  # decimal
     volatility: float | None  # unitless ratio
-    revenue_potential_usd: float | None  # crude only; None for gas
+    revenue_potential_usd: float | None
+    # Empty when illustrative defaults are used; populated like
+    # "WTI USD 79.80/bbl as of 2026-04-24" when live prices were applied.
+    revenue_price_label: str = ""
 
     notes: list[str] = field(default_factory=list)
 
@@ -85,6 +88,7 @@ class KPISet:
             "five_year_cagr": self.five_year_cagr,
             "volatility": self.volatility,
             "revenue_potential_usd": self.revenue_potential_usd,
+            "revenue_price_label": self.revenue_price_label,
             "notes": list(self.notes),
         }
 
@@ -170,19 +174,30 @@ def volatility(
 
 
 def revenue_potential_usd(
-    df: pd.DataFrame, engine: ForecastEngine, region_code: str, product: str, year: int
+    df: pd.DataFrame,
+    engine: ForecastEngine,
+    region_code: str,
+    product: str,
+    year: int,
+    *,
+    wti_price: float = WTI_PRICE_USD_PER_BBL,
+    henry_hub_price: float = HENRY_HUB_USD_PER_MMBTU,
 ) -> float | None:
-    """Illustrative dollar value of production. Crude uses WTI; gas uses
-    Henry Hub * MMBtu/MMCF. None if no production estimate is available."""
+    """Dollar value of production. Crude uses WTI; gas uses Henry Hub *
+    MMBtu/MMCF. None if no production estimate is available.
+
+    Prices default to the illustrative constants but can be overridden
+    with live spot prices (see src/data/prices.py).
+    """
     value, _ = get_actual_or_forecast(df, engine, region_code, product, year)
     if value is None:
         return None
     if product == Product.CRUDE_OIL:
         # value is in MBBL (thousand barrels); WTI is per barrel
-        return value * 1000.0 * WTI_PRICE_USD_PER_BBL
+        return value * 1000.0 * wti_price
     if product == Product.NATURAL_GAS:
         # value is in MMCF (million cubic feet); convert to MMBtu
-        return value * MMBTU_PER_MMCF * HENRY_HUB_USD_PER_MMBTU
+        return value * MMBTU_PER_MMCF * henry_hub_price
     return None
 
 
@@ -195,9 +210,18 @@ def compute_kpi_set(
     region_code: str,
     product: str,
     year: int,
+    *,
+    wti_price: float = WTI_PRICE_USD_PER_BBL,
+    henry_hub_price: float = HENRY_HUB_USD_PER_MMBTU,
+    revenue_price_label: str = "",
 ) -> KPISet:
     """Compute every KPI for one (region, product, year). Always returns a
-    KPISet; missing components are None and explained in notes[]."""
+    KPISet; missing components are None and explained in notes[].
+
+    Optional `wti_price` / `henry_hub_price` override the illustrative
+    constants for Revenue Potential. `revenue_price_label` is surfaced
+    in the UI so the user can see whether prices are live or illustrative.
+    """
     # Resolve display name. Prefer the loaded data (authoritative), but fall
     # back to the static region registry so non-producing states still get
     # a friendly name in the empty-state message.
@@ -244,7 +268,14 @@ def compute_kpi_set(
         five_year_cagr=five_year_cagr(df, region_code, product, year),
         volatility=volatility(df, region_code, product, year),
         revenue_potential_usd=revenue_potential_usd(
-            df, engine, region_code, product, year
+            df,
+            engine,
+            region_code,
+            product,
+            year,
+            wti_price=wti_price,
+            henry_hub_price=henry_hub_price,
         ),
+        revenue_price_label=revenue_price_label,
         notes=notes,
     )
