@@ -1,4 +1,5 @@
 """KPI card row. Renders the four headline numbers + revenue potential."""
+
 from __future__ import annotations
 
 import streamlit as st
@@ -66,30 +67,32 @@ def render_kpi_cards(kpis: KPISet) -> None:
     with col1:
         st.metric(
             label="Projected Production",
-            value=_fmt_volume(kpis.projected_production, kpis.projected_production_unit),
+            value=_fmt_volume(
+                kpis.projected_production, kpis.projected_production_unit
+            ),
             help="Headline KPI. Past full years use EIA actuals; future and "
-                 "partial-current years use a linear-regression forecast.",
+            "partial-current years use a linear-regression forecast.",
         )
     with col2:
         st.metric(
             label="YoY Growth",
             value=_fmt_pct(kpis.yoy_growth_rate),
             help="Year-over-year percent change. Only computed for years that "
-                 "have a directly observed prior year.",
+            "have a directly observed prior year.",
         )
     with col3:
         st.metric(
             label="5-yr CAGR",
             value=_fmt_pct(kpis.five_year_cagr),
             help="Compound annual growth rate over the 5 years ending in the "
-                 "selected year. Smooths cyclical noise.",
+            "selected year. Smooths cyclical noise.",
         )
     with col4:
         st.metric(
             label="Volatility",
             value=_fmt_ratio(kpis.volatility),
             help="Coefficient of variation of YoY % over the trailing 10 years. "
-                 "Higher = more boom/bust risk.",
+            "Higher = more boom/bust risk.",
         )
 
     # We avoid '$' anywhere in this string: Streamlit pipes captions through

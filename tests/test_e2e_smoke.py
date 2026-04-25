@@ -3,6 +3,7 @@ function exists. We do NOT spin up a real Streamlit server here — the pytest
 collector cannot run inside Streamlit's runtime — but importing the module
 exercises every UI module and catches syntax / import-graph errors before
 they surface in a deploy."""
+
 from __future__ import annotations
 
 

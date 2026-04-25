@@ -2,10 +2,10 @@
 
 Three Tier-2 polish items kept compact in one row so the chart and AI
 panel stay above the fold."""
+
 from __future__ import annotations
 
 from datetime import datetime
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -50,8 +50,12 @@ def render_tools_panel(
     with c1:
         try:
             xlsx_bytes = build_workbook(
-                engine, region_code, region_name, product,
-                selected_year, forecast_end_year,
+                engine,
+                region_code,
+                region_name,
+                product,
+                selected_year,
+                forecast_end_year,
             )
             st.download_button(
                 label="📥 Excel export",
@@ -83,11 +87,17 @@ def render_tools_panel(
             )
             st.markdown("**Series:**")
             st.markdown("- Crude oil: `petroleum/crd/crpdn` · process FPF · unit MBBL")
-            st.markdown("- Natural gas: `natural-gas/prod/sum` · process VGM · unit MMCF")
+            st.markdown(
+                "- Natural gas: `natural-gas/prod/sum` · process VGM · unit MMCF"
+            )
             st.markdown(f"**Cache last refreshed:** `{_last_fetch_iso()}`")
-            st.markdown(f"**Coverage:** {n_rows:,} annual rows across "
-                        f"{n_regions} regions, years {year_min}-{year_max}.")
-            st.markdown(f"**Last full year:** {last_full} (later years are partial or forecast).")
+            st.markdown(
+                f"**Coverage:** {n_rows:,} annual rows across "
+                f"{n_regions} regions, years {year_min}-{year_max}."
+            )
+            st.markdown(
+                f"**Last full year:** {last_full} (later years are partial or forecast)."
+            )
             st.markdown(
                 "Forecasts are produced by `src/forecast/engine.py` (linear regression "
                 "with ±1.96σ confidence band). Anomalies are flagged statistically "
@@ -104,9 +114,12 @@ def render_tools_panel(
             return
         adj_pct = st.slider(
             "Sensitivity (forecast assumption ±%)",
-            min_value=-30, max_value=30, value=0, step=5,
+            min_value=-30,
+            max_value=30,
+            value=0,
+            step=5,
             help="Apply a manual adjustment to the projected production value to "
-                 "stress-test downstream KPIs. Shown only for the selected year.",
+            "stress-test downstream KPIs. Shown only for the selected year.",
             key="sensitivity_slider",
         )
         adj_factor = 1.0 + (adj_pct / 100.0)
@@ -133,6 +146,6 @@ def render_tools_panel(
         with sub2:
             st.metric(
                 "Adjusted revenue (USD)",
-                f"USD {rev/1e9:.2f}B",
-                delta=f"{delta_rev/1e9:+.2f}B" if adj_pct != 0 else None,
+                f"USD {rev / 1e9:.2f}B",
+                delta=f"{delta_rev / 1e9:+.2f}B" if adj_pct != 0 else None,
             )

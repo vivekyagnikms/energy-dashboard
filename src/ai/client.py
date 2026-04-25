@@ -8,6 +8,7 @@ Layers:
   during judging).
 - MOCK_AI=true bypass for development and testing.
 """
+
 from __future__ import annotations
 
 import logging
@@ -43,6 +44,7 @@ INITIAL_BACKOFF_SECONDS: float = 1.0
 class GeminiCallStats:
     """Light-touch usage tracker. We do not bother with token-level counting
     on the free tier — request count is the meaningful free-tier limit."""
+
     requests: int = 0
     rate_limit_hits: int = 0
     last_error: str | None = None
@@ -85,7 +87,9 @@ class GeminiClient:
         vs final text and looping appropriately (see chat.py).
         """
         if self.mock or self._client is None:
-            raise GeminiUnavailable("client is in mock mode; do not call generate() directly")
+            raise GeminiUnavailable(
+                "client is in mock mode; do not call generate() directly"
+            )
 
         config_kwargs: dict = {}
         if system_instruction:
@@ -111,15 +115,22 @@ class GeminiClient:
             except Exception as e:
                 last_error = e
                 msg = str(e).lower()
-                is_rate_limit = ("429" in msg or "rate" in msg or "quota" in msg
-                                 or "resource_exhausted" in msg)
+                is_rate_limit = (
+                    "429" in msg
+                    or "rate" in msg
+                    or "quota" in msg
+                    or "resource_exhausted" in msg
+                )
                 if is_rate_limit:
                     self.stats.rate_limit_hits += 1
                 if attempt < MAX_RETRIES:
                     sleep_for = INITIAL_BACKOFF_SECONDS * (2 ** (attempt - 1))
                     logger.warning(
                         "Gemini call failed (attempt %d/%d): %s — retrying in %.1fs",
-                        attempt, MAX_RETRIES, e, sleep_for,
+                        attempt,
+                        MAX_RETRIES,
+                        e,
+                        sleep_for,
                     )
                     time.sleep(sleep_for)
                     continue
@@ -135,4 +146,6 @@ class GeminiClient:
 
     def is_available(self) -> bool:
         """True if real calls are likely to succeed (not mocked, not circuit-open)."""
-        return not self.mock and not self.stats.circuit_open and self._client is not None
+        return (
+            not self.mock and not self.stats.circuit_open and self._client is not None
+        )

@@ -8,11 +8,12 @@ Strict separation of concerns:
   and a structured-output schema; it returns one short explanation per year.
 - Falls back to a deterministic template if Gemini is unavailable.
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pandas as pd
 from google.genai import types as genai_types
@@ -48,8 +49,8 @@ class AnomalyReport(BaseModel):
 class AnomalyResult:
     region: str
     product: str
-    flagged_years: list[dict]   # raw output of statistical detection
-    explanations: list[dict]    # per-year text, parallel to flagged_years
+    flagged_years: list[dict]  # raw output of statistical detection
+    explanations: list[dict]  # per-year text, parallel to flagged_years
     method: str
     is_mock: bool = False
     note: str | None = None
@@ -84,13 +85,16 @@ def explain_anomalies(
     pretty_product = "crude oil" if product == Product.CRUDE_OIL else "natural gas"
 
     detection = get_anomalies_impl(
-        df, engine,
+        df,
+        engine,
         GetAnomaliesInput(region=region_code, product=product, z_threshold=z_threshold),
     )
     if not detection.ok:
         return AnomalyResult(
-            region=region_name, product=pretty_product,
-            flagged_years=[], explanations=[],
+            region=region_name,
+            product=pretty_product,
+            flagged_years=[],
+            explanations=[],
             method=f"|z|>={z_threshold} on YoY%",
             note=detection.error,
         )
@@ -101,8 +105,10 @@ def explain_anomalies(
 
     if not flagged:
         return AnomalyResult(
-            region=region_name, product=pretty_product,
-            flagged_years=[], explanations=[],
+            region=region_name,
+            product=pretty_product,
+            flagged_years=[],
+            explanations=[],
             method=method,
             note=(
                 f"No years exceed |z|>={z_threshold} for {region_name} {pretty_product} "
@@ -119,13 +125,17 @@ def explain_anomalies(
             contents=[
                 genai_types.Content(
                     role="user",
-                    parts=[genai_types.Part(text=(
-                        f"Region: {region_name}\n"
-                        f"Product: {pretty_product}\n"
-                        f"Method: {method}\n"
-                        f"Flagged anomalies (statistical detection — do not modify):\n"
-                        f"{json.dumps(flagged, indent=2)}"
-                    ))],
+                    parts=[
+                        genai_types.Part(
+                            text=(
+                                f"Region: {region_name}\n"
+                                f"Product: {pretty_product}\n"
+                                f"Method: {method}\n"
+                                f"Flagged anomalies (statistical detection — do not modify):\n"
+                                f"{json.dumps(flagged, indent=2)}"
+                            )
+                        )
+                    ],
                 )
             ],
             system_instruction=ANOMALY_SYSTEM_PROMPT,
@@ -151,15 +161,17 @@ def explain_anomalies(
     explain_by_year = {x.year: x.explanation for x in parsed.explanations}
     explanations: list[dict] = []
     for f in flagged:
-        explanations.append({
-            "year": f["year"],
-            "yoy_pct": f["yoy_pct"],
-            "z_score": f["z_score"],
-            "explanation": explain_by_year.get(
-                f["year"],
-                "(No narrative produced for this year — see numeric values.)",
-            ),
-        })
+        explanations.append(
+            {
+                "year": f["year"],
+                "yoy_pct": f["yoy_pct"],
+                "z_score": f["z_score"],
+                "explanation": explain_by_year.get(
+                    f["year"],
+                    "(No narrative produced for this year — see numeric values.)",
+                ),
+            }
+        )
     return AnomalyResult(
         region=region_name,
         product=pretty_product,
@@ -170,23 +182,31 @@ def explain_anomalies(
 
 
 def _fallback_explanations(
-    region: str, pretty_product: str, flagged: list[dict], method: str,
+    region: str,
+    pretty_product: str,
+    flagged: list[dict],
+    method: str,
 ) -> AnomalyResult:
     """Deterministic per-year notes when the LLM is unavailable."""
     explanations: list[dict] = []
     for f in flagged:
         direction = "spike" if f["yoy_pct"] > 0 else "drop"
-        explanations.append({
-            "year": f["year"],
-            "yoy_pct": f["yoy_pct"],
-            "z_score": f["z_score"],
-            "explanation": (
-                f"{f['year']} shows a {abs(f['yoy_pct']):.1f}% YoY {direction} "
-                f"(z={f['z_score']:.1f}) — see the chart and KPI history for context."
-            ),
-        })
+        explanations.append(
+            {
+                "year": f["year"],
+                "yoy_pct": f["yoy_pct"],
+                "z_score": f["z_score"],
+                "explanation": (
+                    f"{f['year']} shows a {abs(f['yoy_pct']):.1f}% YoY {direction} "
+                    f"(z={f['z_score']:.1f}) — see the chart and KPI history for context."
+                ),
+            }
+        )
     return AnomalyResult(
-        region=region, product=pretty_product,
-        flagged_years=flagged, explanations=explanations,
-        method=method, is_mock=True,
+        region=region,
+        product=pretty_product,
+        flagged_years=flagged,
+        explanations=explanations,
+        method=method,
+        is_mock=True,
     )

@@ -2,6 +2,7 @@
 
 Returns a Selection dataclass that the rest of the UI consumes.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -50,9 +51,16 @@ def _ordered_regions() -> list[Region]:
     for r in ALL_REGIONS:
         by_group.setdefault(r.group, []).append(r)
     out: list[Region] = []
-    for group in (RegionGroup.NATIONAL, RegionGroup.OFFSHORE,
-                  RegionGroup.PADD, RegionGroup.STATE):
-        items = sorted(by_group.get(group, []), key=lambda r: r.sort_priority * 1000 + ord(r.name[0]))
+    for group in (
+        RegionGroup.NATIONAL,
+        RegionGroup.OFFSHORE,
+        RegionGroup.PADD,
+        RegionGroup.STATE,
+    ):
+        items = sorted(
+            by_group.get(group, []),
+            key=lambda r: r.sort_priority * 1000 + ord(r.name[0]),
+        )
         if group is RegionGroup.STATE:
             items = sorted(by_group.get(group, []), key=lambda r: r.name)
         out.extend(items)
@@ -71,15 +79,17 @@ def render_sidebar(df: pd.DataFrame) -> Selection:
 
     # --- Region ---
     regions = _ordered_regions()
-    default_idx = next((i for i, r in enumerate(regions) if r.group is RegionGroup.NATIONAL), 0)
+    default_idx = next(
+        (i for i, r in enumerate(regions) if r.group is RegionGroup.NATIONAL), 0
+    )
     region = st.sidebar.selectbox(
         "Region",
         options=regions,
         index=default_idx,
         format_func=_format_region,
         help="Includes US national, 5 PADDs, Federal Offshore Gulf of Mexico, "
-             "and all 50 states + DC. States with no oil/gas production show a "
-             "clean empty state when selected.",
+        "and all 50 states + DC. States with no oil/gas production show a "
+        "clean empty state when selected.",
     )
 
     # --- Product ---
@@ -99,7 +109,9 @@ def render_sidebar(df: pd.DataFrame) -> Selection:
     else:
         min_year = int(df["year"].min())
         full_years = df.loc[df["n_months"] >= 12, "year"]
-        latest_observed = int(full_years.max()) if not full_years.empty else int(df["year"].max())
+        latest_observed = (
+            int(full_years.max()) if not full_years.empty else int(df["year"].max())
+        )
     max_year = latest_observed + 5
     year = st.sidebar.slider(
         "Year",

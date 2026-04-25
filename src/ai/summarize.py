@@ -10,6 +10,7 @@ Implementation pattern:
 - On-demand only: triggered by an explicit button in the UI, not on every
   region change. Conserves the 5 RPM free-tier quota.
 """
+
 from __future__ import annotations
 
 import json
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 class AutoSummary(BaseModel):
     """Pydantic model that doubles as the Gemini response_schema. The model
     must return JSON matching this shape; we then parse and render."""
+
     summary: str = Field(description="2-3 sentence narrative for a BD analyst.")
     top_drivers: list[str] = Field(
         description="2-4 bullet points naming the main forces shaping the trend.",
@@ -50,6 +52,7 @@ class AutoSummary(BaseModel):
 @dataclass(frozen=True)
 class SummaryResult:
     """What the UI receives. is_mock distinguishes live LLM output from fallback."""
+
     summary: str
     top_drivers: list[str]
     caveats: list[str]
@@ -92,8 +95,11 @@ def _assemble_grounding(
     # Forecast for selected_year (and last_year + 5 if different).
     fc_selected = None
     try:
-        fc_selected = asdict(engine.forecast(region_code, product, selected_year)) \
-            if selected_year > last_year else None
+        fc_selected = (
+            asdict(engine.forecast(region_code, product, selected_year))
+            if selected_year > last_year
+            else None
+        )
     except Exception:
         fc_selected = None
     fc_horizon = None

@@ -5,6 +5,7 @@ Two layers:
 - Seed snapshot at `data/seed/eia_snapshot.parquet` — committed to repo, used as
   fallback when the API is unreachable so the demo never hard-fails.
 """
+
 from __future__ import annotations
 
 import time

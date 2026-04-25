@@ -12,6 +12,7 @@ Design choices:
   than guessing.
 - Confidence band uses ±1.96 * residual standard deviation (~95% interval).
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,12 +34,13 @@ PARTIAL_YEAR_MIN_MONTHS: Final[int] = 12  # only count fully-reported years
 @dataclass(frozen=True)
 class ForecastResult:
     """Outcome of a forecast for one (region, product, year)."""
-    value: float            # point estimate (in product's native unit)
-    lower: float            # value - z * residual_std (clipped at 0)
-    upper: float            # value + z * residual_std
-    residual_std: float     # std-dev of training residuals
-    r_squared: float        # goodness-of-fit on training data
-    n_training_years: int   # how many full-year observations the model saw
+
+    value: float  # point estimate (in product's native unit)
+    lower: float  # value - z * residual_std (clipped at 0)
+    upper: float  # value + z * residual_std
+    residual_std: float  # std-dev of training residuals
+    r_squared: float  # goodness-of-fit on training data
+    n_training_years: int  # how many full-year observations the model saw
     training_year_range: tuple[int, int]
     target_year: int
     is_extrapolation: bool  # True if target_year > max(training years)
@@ -81,8 +83,8 @@ class ForecastEngine:
         )
         return (
             self._df.loc[mask, ["year", "value"]]
-                    .sort_values("year")
-                    .reset_index(drop=True)
+            .sort_values("year")
+            .reset_index(drop=True)
         )
 
     def _fit(self, training: pd.DataFrame) -> tuple[LinearRegression, float, float]:
@@ -95,7 +97,9 @@ class ForecastEngine:
         residuals = y - predictions
         # Use ddof=2 (subtract slope + intercept) for an unbiased residual std.
         ddof = min(2, max(0, len(residuals) - 1))
-        residual_std = float(np.std(residuals, ddof=ddof)) if len(residuals) > 1 else 0.0
+        residual_std = (
+            float(np.std(residuals, ddof=ddof)) if len(residuals) > 1 else 0.0
+        )
         r2 = float(model.score(x, y))
         return model, residual_std, r2
 
@@ -159,23 +163,29 @@ class ForecastEngine:
         """
         training = self._series_for(region_code, product)
         if len(training) < MIN_TRAINING_YEARS:
-            return pd.DataFrame(columns=["year", "value", "lower", "upper", "is_extrapolation"])
+            return pd.DataFrame(
+                columns=["year", "value", "lower", "upper", "is_extrapolation"]
+            )
 
         max_year = int(training["year"].max())
         horizon_cap = max_year + MAX_FORECAST_HORIZON_YEARS
         end = min(end_year, horizon_cap)
         if end <= max_year:
-            return pd.DataFrame(columns=["year", "value", "lower", "upper", "is_extrapolation"])
+            return pd.DataFrame(
+                columns=["year", "value", "lower", "upper", "is_extrapolation"]
+            )
 
         model, residual_std, _ = self._fit(training)
         years = np.arange(max_year + 1, end + 1).reshape(-1, 1)
         preds = model.predict(years)
         margin = CONFIDENCE_Z * residual_std
 
-        return pd.DataFrame({
-            "year": years.flatten().astype(int),
-            "value": np.clip(preds, 0.0, None),
-            "lower": np.clip(preds - margin, 0.0, None),
-            "upper": preds + margin,
-            "is_extrapolation": True,
-        })
+        return pd.DataFrame(
+            {
+                "year": years.flatten().astype(int),
+                "value": np.clip(preds, 0.0, None),
+                "lower": np.clip(preds - margin, 0.0, None),
+                "upper": preds + margin,
+                "is_extrapolation": True,
+            }
+        )

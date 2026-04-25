@@ -5,6 +5,7 @@ Every AI response includes a 'Show grounding' expander listing the tools
 that were called and what they returned — judges (and curious users) can
 audit any number on screen.
 """
+
 from __future__ import annotations
 
 import json
@@ -41,7 +42,9 @@ def _render_grounding(turn: ChatTurnResult | None) -> None:
         return
     with st.expander("🔍 Show grounding (tool calls + raw outputs)"):
         if turn.is_mock:
-            st.warning("This response came from mock-mode (live AI rate-limited / disabled).")
+            st.warning(
+                "This response came from mock-mode (live AI rate-limited / disabled)."
+            )
         if turn.is_refusal:
             st.info("Refusal response — request was off-topic.")
         if turn.unverified_numbers:
@@ -58,7 +61,9 @@ def _render_grounding(turn: ChatTurnResult | None) -> None:
 
 def _render_summary(summary: SummaryResult) -> None:
     badge = "🤖 Mock" if summary.is_mock else "🧠 AI"
-    confidence_color = {"high": "🟢", "medium": "🟡", "low": "🔴"}.get(summary.confidence, "⚪")
+    confidence_color = {"high": "🟢", "medium": "🟡", "low": "🔴"}.get(
+        summary.confidence, "⚪"
+    )
     st.markdown(f"**{badge} · {confidence_color} Confidence: {summary.confidence}**")
     st.markdown(summary.summary)
     if summary.top_drivers:
@@ -119,16 +124,24 @@ def render_ai_panel(
     # --- Three feature buttons in a row ---
     c1, c2, c3 = st.columns(3)
     with c1:
-        if st.button("📝 Auto-summary", help="Narrative commentary on the selected region/year",
-                     use_container_width=True, key="btn_summary"):
+        if st.button(
+            "📝 Auto-summary",
+            help="Narrative commentary on the selected region/year",
+            use_container_width=True,
+            key="btn_summary",
+        ):
             with st.spinner("Generating summary…"):
                 summary = summarize_region(
                     client, df, engine, region_code, product, selected_year
                 )
                 st.session_state["last_summary"] = summary
     with c2:
-        if st.button("🚨 Detect anomalies", help="Statistical anomaly detection + narrative explanation",
-                     use_container_width=True, key="btn_anomaly"):
+        if st.button(
+            "🚨 Detect anomalies",
+            help="Statistical anomaly detection + narrative explanation",
+            use_container_width=True,
+            key="btn_anomaly",
+        ):
             with st.spinner("Detecting anomalies…"):
                 anomaly = explain_anomalies(client, df, engine, region_code, product)
                 st.session_state["last_anomaly"] = anomaly
@@ -168,7 +181,9 @@ def render_ai_panel(
         )
         return
 
-    user_msg = st.chat_input("Ask about production trends, forecasts, comparisons, anomalies…")
+    user_msg = st.chat_input(
+        "Ask about production trends, forecasts, comparisons, anomalies…"
+    )
     if not user_msg:
         return
     user_msg = user_msg.strip()[:MAX_USER_INPUT_CHARS]
@@ -186,10 +201,15 @@ def render_ai_panel(
     with st.chat_message("assistant"):
         with st.spinner("Thinking…"):
             turn = run_chat_turn(
-                client, df, engine, user_msg,
+                client,
+                df,
+                engine,
+                user_msg,
                 history=[
-                    {"role": h["role"] if h["role"] != "assistant" else "model",
-                     "text": h["text"]}
+                    {
+                        "role": h["role"] if h["role"] != "assistant" else "model",
+                        "text": h["text"],
+                    }
                     for h in st.session_state["chat_history"][:-1]
                     if h.get("turn") is None or not h["turn"].is_mock
                 ][-6:],  # short history window to keep prompts small

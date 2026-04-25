@@ -3,6 +3,7 @@
 Pydantic for individual record validation (used at API ingestion boundary).
 Plain typing for the canonical DataFrame columns the rest of the app consumes.
 """
+
 from __future__ import annotations
 
 from typing import Final
@@ -12,6 +13,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class Product(str):
     """Product identifiers used throughout the app."""
+
     CRUDE_OIL: Final[str] = "crude_oil"
     NATURAL_GAS: Final[str] = "natural_gas"
 
@@ -23,7 +25,10 @@ class ProductionRecord(BaseModel):
     """Single production observation. Validates one EIA API row before it
     enters the canonical DataFrame.
     """
-    region_code: str = Field(min_length=2, max_length=10, description="EIA duoarea code")
+
+    region_code: str = Field(
+        min_length=2, max_length=10, description="EIA duoarea code"
+    )
     product: str = Field(description="One of: crude_oil, natural_gas")
     period: str = Field(description="ISO year or year-month, e.g. '2022' or '2022-06'")
     value: float = Field(ge=0, description="Production volume; non-negative")
@@ -44,11 +49,11 @@ class ProductionRecord(BaseModel):
 ANNUAL_COLUMNS: Final[tuple[str, ...]] = (
     "region_code",  # EIA duoarea code
     "region_name",  # human-readable
-    "product",      # crude_oil | natural_gas
-    "year",         # int
-    "value",        # float; sum of monthly values for that year
-    "unit",         # string; copied through from EIA
-    "n_months",     # int; count of months that contributed (12 = full year, <12 = partial)
+    "product",  # crude_oil | natural_gas
+    "year",  # int
+    "value",  # float; sum of monthly values for that year
+    "unit",  # string; copied through from EIA
+    "n_months",  # int; count of months that contributed (12 = full year, <12 = partial)
 )
 
 

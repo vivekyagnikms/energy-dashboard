@@ -1,4 +1,5 @@
 """History + forecast chart. Solid past, dashed future, confidence band."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -63,9 +64,17 @@ def render_history_forecast_chart(
         # Prepend last history point so the forecast line connects visually.
         last_year = int(history["year"].iloc[-1])
         last_value = float(history["value"].iloc[-1])
-        bridge = pd.DataFrame({"year": [last_year], "value": [last_value],
-                               "lower": [last_value], "upper": [last_value]})
-        plot_df = pd.concat([bridge, fc_df[["year", "value", "lower", "upper"]]], ignore_index=True)
+        bridge = pd.DataFrame(
+            {
+                "year": [last_year],
+                "value": [last_value],
+                "lower": [last_value],
+                "upper": [last_value],
+            }
+        )
+        plot_df = pd.concat(
+            [bridge, fc_df[["year", "value", "lower", "upper"]]], ignore_index=True
+        )
 
         # Confidence band (fill between upper and lower).
         fig.add_trace(

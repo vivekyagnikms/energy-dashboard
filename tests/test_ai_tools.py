@@ -4,10 +4,10 @@ No LLM calls. Each test fabricates a tiny DataFrame + ForecastEngine and
 verifies that execute_tool() validates inputs, executes the right
 implementation, and returns a typed dict the LLM can consume.
 """
+
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from src.ai.tools import (
     execute_tool,
@@ -18,13 +18,29 @@ from src.data.schema import Product
 from src.forecast.engine import ForecastEngine
 
 
-def _df(values: dict[int, float], *, region: str = "STX", region_name: str = "Texas",
-        product: str = Product.CRUDE_OIL, unit: str = "MBBL", n_months: int = 12) -> pd.DataFrame:
-    return pd.DataFrame([
-        {"region_code": region, "region_name": region_name, "product": product,
-         "year": y, "value": v, "unit": unit, "n_months": n_months}
-        for y, v in values.items()
-    ])
+def _df(
+    values: dict[int, float],
+    *,
+    region: str = "STX",
+    region_name: str = "Texas",
+    product: str = Product.CRUDE_OIL,
+    unit: str = "MBBL",
+    n_months: int = 12,
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "region_code": region,
+                "region_name": region_name,
+                "product": product,
+                "year": y,
+                "value": v,
+                "unit": unit,
+                "n_months": n_months,
+            }
+            for y, v in values.items()
+        ]
+    )
 
 
 # ---------- region/product resolvers ----------
@@ -63,9 +79,12 @@ def test_product_resolver():
 def test_get_production_returns_actual_for_known_year():
     df = _df({2020 + i: 1000.0 + i for i in range(6)})
     engine = ForecastEngine(df)
-    r = execute_tool("get_production",
-                     {"region": "Texas", "product": "crude_oil", "year": 2024},
-                     df, engine)
+    r = execute_tool(
+        "get_production",
+        {"region": "Texas", "product": "crude_oil", "year": 2024},
+        df,
+        engine,
+    )
     assert r["ok"] is True
     assert r["data"]["value"] == 1004.0
     assert r["data"]["is_forecast"] is False
@@ -75,9 +94,9 @@ def test_get_production_returns_actual_for_known_year():
 def test_get_production_returns_forecast_for_future_year():
     df = _df({2020 + i: 1000.0 + 10.0 * i for i in range(6)})
     engine = ForecastEngine(df)
-    r = execute_tool("get_production",
-                     {"region": "TX", "product": "oil", "year": 2030},
-                     df, engine)
+    r = execute_tool(
+        "get_production", {"region": "TX", "product": "oil", "year": 2030}, df, engine
+    )
     assert r["ok"] is True
     assert r["data"]["is_forecast"] is True
 
@@ -85,9 +104,12 @@ def test_get_production_returns_forecast_for_future_year():
 def test_get_production_unknown_region_errors_cleanly():
     df = _df({2020 + i: 1000.0 + i for i in range(6)})
     engine = ForecastEngine(df)
-    r = execute_tool("get_production",
-                     {"region": "Atlantis", "product": "crude", "year": 2024},
-                     df, engine)
+    r = execute_tool(
+        "get_production",
+        {"region": "Atlantis", "product": "crude", "year": 2024},
+        df,
+        engine,
+    )
     assert r["ok"] is False
     assert "Unknown region" in r["error"]
 
@@ -95,9 +117,12 @@ def test_get_production_unknown_region_errors_cleanly():
 def test_get_production_invalid_args_rejected_by_pydantic():
     df = _df({2020 + i: 1000.0 + i for i in range(6)})
     engine = ForecastEngine(df)
-    r = execute_tool("get_production",
-                     {"region": "TX", "product": "moonshine", "year": 2024},
-                     df, engine)
+    r = execute_tool(
+        "get_production",
+        {"region": "TX", "product": "moonshine", "year": 2024},
+        df,
+        engine,
+    )
     assert r["ok"] is False
     assert "Invalid arguments" in r["error"]
 
@@ -106,15 +131,21 @@ def test_get_production_invalid_args_rejected_by_pydantic():
 
 
 def test_compare_regions_returns_sorted_descending():
-    df = pd.concat([
-        _df({2024: 100.0}, region="STX", region_name="Texas"),
-        _df({2024: 500.0}, region="SND", region_name="North Dakota"),
-        _df({2024: 50.0}, region="SNM", region_name="New Mexico"),
-    ], ignore_index=True)
+    df = pd.concat(
+        [
+            _df({2024: 100.0}, region="STX", region_name="Texas"),
+            _df({2024: 500.0}, region="SND", region_name="North Dakota"),
+            _df({2024: 50.0}, region="SNM", region_name="New Mexico"),
+        ],
+        ignore_index=True,
+    )
     engine = ForecastEngine(df)
-    r = execute_tool("compare_regions",
-                     {"regions": ["TX", "ND", "NM"], "product": "crude_oil", "year": 2024},
-                     df, engine)
+    r = execute_tool(
+        "compare_regions",
+        {"regions": ["TX", "ND", "NM"], "product": "crude_oil", "year": 2024},
+        df,
+        engine,
+    )
     assert r["ok"] is True
     values = [row["value"] for row in r["data"]["rows"]]
     assert values == sorted(values, reverse=True)
@@ -123,9 +154,12 @@ def test_compare_regions_returns_sorted_descending():
 def test_compare_regions_skips_invalid_with_note():
     df = _df({2024: 100.0})
     engine = ForecastEngine(df)
-    r = execute_tool("compare_regions",
-                     {"regions": ["TX", "Atlantis"], "product": "crude_oil", "year": 2024},
-                     df, engine)
+    r = execute_tool(
+        "compare_regions",
+        {"regions": ["TX", "Atlantis"], "product": "crude_oil", "year": 2024},
+        df,
+        engine,
+    )
     assert r["ok"] is True
     assert any("Atlantis" in n for n in r["notes"])
 
@@ -139,12 +173,17 @@ def test_anomalies_flagged_only_above_z_threshold():
     values[2018] = 300.0  # one extreme value
     df = _df(values)
     engine = ForecastEngine(df)
-    r = execute_tool("get_anomalies",
-                     {"region": "TX", "product": "crude_oil", "z_threshold": 1.5},
-                     df, engine)
+    r = execute_tool(
+        "get_anomalies",
+        {"region": "TX", "product": "crude_oil", "z_threshold": 1.5},
+        df,
+        engine,
+    )
     assert r["ok"] is True
     flagged_years = {a["year"] for a in r["data"]["anomalies"]}
-    assert 2018 in flagged_years or 2019 in flagged_years  # spike year or post-spike snap-back
+    assert (
+        2018 in flagged_years or 2019 in flagged_years
+    )  # spike year or post-spike snap-back
 
 
 # ---------- list_regions ----------

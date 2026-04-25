@@ -8,9 +8,9 @@ Coverage targets:
 - forecast_range matches per-year forecast on every year
 - production-cannot-be-negative invariant
 """
+
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -23,21 +23,28 @@ from src.forecast.engine import (
 )
 
 
-def _make_df(values_by_year: dict[int, float], *, n_months: int = 12,
-             region_code: str = "STX", product: str = "crude_oil") -> pd.DataFrame:
+def _make_df(
+    values_by_year: dict[int, float],
+    *,
+    n_months: int = 12,
+    region_code: str = "STX",
+    product: str = "crude_oil",
+) -> pd.DataFrame:
     """Build a minimal DataFrame matching the canonical schema."""
-    return pd.DataFrame([
-        {
-            "region_code": region_code,
-            "region_name": "Texas",
-            "product": product,
-            "year": y,
-            "value": v,
-            "unit": "MBBL",
-            "n_months": n_months,
-        }
-        for y, v in values_by_year.items()
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "region_code": region_code,
+                "region_name": "Texas",
+                "product": product,
+                "year": y,
+                "value": v,
+                "unit": "MBBL",
+                "n_months": n_months,
+            }
+            for y, v in values_by_year.items()
+        ]
+    )
 
 
 def test_perfect_linear_input_recovers_exact_forecast():
@@ -112,7 +119,9 @@ def test_is_supported_reflects_full_year_count():
     full = _make_df({2020 + i: 100.0 for i in range(MIN_TRAINING_YEARS)}, n_months=12)
     engine = ForecastEngine(full)
     assert engine.is_supported("STX", "crude_oil") is True
-    assert engine.is_supported("STX", "natural_gas") is False  # no data for that product
+    assert (
+        engine.is_supported("STX", "natural_gas") is False
+    )  # no data for that product
     assert engine.is_supported("UNKNOWN", "crude_oil") is False
 
 

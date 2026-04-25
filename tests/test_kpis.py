@@ -2,6 +2,7 @@
 
 Coverage: each KPI's happy path + obvious edge cases (zero, missing,
 single-year, non-producer). Combined entry point integration."""
+
 from __future__ import annotations
 
 import math
@@ -25,15 +26,29 @@ from src.kpis.calculators import (
 )
 
 
-def _df(values: dict[int, float], *, region: str = "STX", region_name: str = "Texas",
-        product: str = Product.CRUDE_OIL, unit: str = "MBBL", n_months: int = 12) -> pd.DataFrame:
-    return pd.DataFrame([
-        {
-            "region_code": region, "region_name": region_name,
-            "product": product, "year": y, "value": v, "unit": unit, "n_months": n_months,
-        }
-        for y, v in values.items()
-    ])
+def _df(
+    values: dict[int, float],
+    *,
+    region: str = "STX",
+    region_name: str = "Texas",
+    product: str = Product.CRUDE_OIL,
+    unit: str = "MBBL",
+    n_months: int = 12,
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "region_code": region,
+                "region_name": region_name,
+                "product": product,
+                "year": y,
+                "value": v,
+                "unit": unit,
+                "n_months": n_months,
+            }
+            for y, v in values.items()
+        ]
+    )
 
 
 # ---------- yoy_growth_rate ----------
@@ -59,7 +74,9 @@ def test_yoy_returns_none_when_prior_is_zero():
 
 def test_five_year_cagr_doubling():
     df = _df({2020: 100.0, 2025: 200.0})
-    expected = 200.0 ** (1.0 / CAGR_WINDOW_YEARS) / 100.0 ** (1.0 / CAGR_WINDOW_YEARS) - 1.0
+    expected = (
+        200.0 ** (1.0 / CAGR_WINDOW_YEARS) / 100.0 ** (1.0 / CAGR_WINDOW_YEARS) - 1.0
+    )
     assert five_year_cagr(df, "STX", Product.CRUDE_OIL, 2025) == pytest.approx(expected)
 
 
@@ -78,7 +95,7 @@ def test_five_year_cagr_returns_none_when_start_zero():
 
 def test_volatility_constant_growth_is_zero_or_none():
     # Identical YoY = std 0; mean nonzero -> ratio 0
-    df = _df({2015 + i: 100.0 * (1.10 ** i) for i in range(8)})
+    df = _df({2015 + i: 100.0 * (1.10**i) for i in range(8)})
     v = volatility(df, "STX", Product.CRUDE_OIL, 2022)
     assert v is not None
     assert v == pytest.approx(0.0, abs=1e-9)
@@ -109,8 +126,11 @@ def test_revenue_potential_crude_uses_wti():
 
 
 def test_revenue_potential_gas_uses_henry_hub_with_mmbtu_conversion():
-    df = _df({2020 + i: 1000.0 + 50.0 * i for i in range(6)},
-             product=Product.NATURAL_GAS, unit="MMCF")
+    df = _df(
+        {2020 + i: 1000.0 + 50.0 * i for i in range(6)},
+        product=Product.NATURAL_GAS,
+        unit="MMCF",
+    )
     engine = ForecastEngine(df)
     rev = revenue_potential_usd(df, engine, "STX", Product.NATURAL_GAS, 2025)
     expected_volume = 1250.0  # MMCF
@@ -130,7 +150,9 @@ def test_revenue_potential_none_when_no_data():
 def test_get_actual_or_forecast_uses_actual_for_past():
     df = _df({2020 + i: 100.0 + 10.0 * i for i in range(6)})
     engine = ForecastEngine(df)
-    value, is_forecast = get_actual_or_forecast(df, engine, "STX", Product.CRUDE_OIL, 2024)
+    value, is_forecast = get_actual_or_forecast(
+        df, engine, "STX", Product.CRUDE_OIL, 2024
+    )
     assert is_forecast is False
     assert value == pytest.approx(140.0)
 
@@ -138,7 +160,9 @@ def test_get_actual_or_forecast_uses_actual_for_past():
 def test_get_actual_or_forecast_uses_forecast_for_future():
     df = _df({2020 + i: 100.0 + 10.0 * i for i in range(6)})
     engine = ForecastEngine(df)
-    value, is_forecast = get_actual_or_forecast(df, engine, "STX", Product.CRUDE_OIL, 2030)
+    value, is_forecast = get_actual_or_forecast(
+        df, engine, "STX", Product.CRUDE_OIL, 2030
+    )
     assert is_forecast is True
     assert value > 140.0  # extrapolated upward
 
@@ -148,7 +172,7 @@ def test_get_actual_or_forecast_uses_forecast_for_future():
 
 def test_compute_kpi_set_for_known_region():
     # 6 years of full data for a region; year=2024 is in the data.
-    df = _df({2019 + i: 100.0 * (1.05 ** i) for i in range(6)})
+    df = _df({2019 + i: 100.0 * (1.05**i) for i in range(6)})
     engine = ForecastEngine(df)
     kpis = compute_kpi_set(df, engine, "STX", Product.CRUDE_OIL, 2024)
     assert kpis.region_code == "STX"
@@ -162,9 +186,19 @@ def test_compute_kpi_set_for_known_region():
 def test_compute_kpi_set_for_non_producer_returns_clean_empty_state():
     # Region with NO data at all
     df = pd.DataFrame(
-        columns=["region_code", "region_name", "product", "year", "value", "unit", "n_months"]
+        columns=[
+            "region_code",
+            "region_name",
+            "product",
+            "year",
+            "value",
+            "unit",
+            "n_months",
+        ]
     )
-    engine = ForecastEngine(_df({2020 + i: 100.0 for i in range(6)}))  # supply some other data so engine works
+    engine = ForecastEngine(
+        _df({2020 + i: 100.0 for i in range(6)})
+    )  # supply some other data so engine works
     kpis = compute_kpi_set(df, engine, "SVT", "crude_oil", 2024)
     assert kpis.projected_production is None
     assert kpis.yoy_growth_rate is None

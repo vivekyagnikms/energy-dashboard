@@ -13,12 +13,12 @@ The exported workbook has three sheets:
 
 Returns bytes; the UI wraps this in st.download_button.
 """
+
 from __future__ import annotations
 
 import io
 from datetime import datetime
 
-import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -72,7 +72,11 @@ def build_workbook(
     forecast = engine.forecast_range(region_code, product, end_year=forecast_end_year)
 
     pretty_product = "Crude Oil" if product == Product.CRUDE_OIL else "Natural Gas"
-    unit = "MBBL (thousand barrels)" if product == Product.CRUDE_OIL else "MMCF (million cubic feet)"
+    unit = (
+        "MBBL (thousand barrels)"
+        if product == Product.CRUDE_OIL
+        else "MMCF (million cubic feet)"
+    )
     price_assumption = (
         f"WTI USD {WTI_PRICE_USD_PER_BBL:.2f}/bbl"
         if product == Product.CRUDE_OIL
@@ -84,14 +88,18 @@ def build_workbook(
     # ---- Sheet 1: Historical ----
     hist_ws = wb.active
     hist_ws.title = "Historical"
-    hist_ws.append([
-        f"{region_name} — {pretty_product} — Annual Production",
-    ])
+    hist_ws.append(
+        [
+            f"{region_name} — {pretty_product} — Annual Production",
+        ]
+    )
     hist_ws.merge_cells("A1:C1")
     hist_ws["A1"].font = Font(bold=True, size=14)
     hist_ws.append([f"Unit: {unit}", "", ""])
-    hist_ws.append([f"Source: U.S. EIA API v2", "", ""])
-    hist_ws.append([f"Generated: {datetime.utcnow().isoformat(timespec='seconds')}Z", "", ""])
+    hist_ws.append(["Source: U.S. EIA API v2", "", ""])
+    hist_ws.append(
+        [f"Generated: {datetime.utcnow().isoformat(timespec='seconds')}Z", "", ""]
+    )
     hist_ws.append([])
     hist_header_row = 6
     hist_ws.append(["Year", "Production", "Unit"])
@@ -101,7 +109,6 @@ def build_workbook(
         cell.alignment = _CENTER
     for _, row in history.iterrows():
         hist_ws.append([int(row["year"]), float(row["value"]), unit.split()[0]])
-    last_hist_row = hist_ws.max_row
     _autosize(hist_ws)
 
     # ---- Sheet 2: Forecast ----
@@ -121,13 +128,15 @@ def build_workbook(
         fc_ws.append(["", "", "", "", "Insufficient data to forecast."])
     else:
         for _, row in forecast.iterrows():
-            fc_ws.append([
-                int(row["year"]),
-                round(float(row["value"]), 2),
-                round(float(row["lower"]), 2),
-                round(float(row["upper"]), 2),
-                "extrapolated" if row["is_extrapolation"] else "",
-            ])
+            fc_ws.append(
+                [
+                    int(row["year"]),
+                    round(float(row["value"]), 2),
+                    round(float(row["lower"]), 2),
+                    round(float(row["upper"]), 2),
+                    "extrapolated" if row["is_extrapolation"] else "",
+                ]
+            )
     _autosize(fc_ws)
 
     # ---- Sheet 3: KPIs (with formulas referencing the Historical sheet) ----
@@ -157,21 +166,27 @@ def build_workbook(
         prior_cell = f"Historical!B{prior_row}"
         cagr_start_cell = f"Historical!B{cagr_start_row}"
 
-        kpi_ws.append([
-            "Projected Production (selected year)",
-            f"={prod_cell}",
-            "Direct lookup of selected year from Historical sheet.",
-        ])
-        kpi_ws.append([
-            "YoY Growth Rate",
-            f"=IF({prior_cell}=0,\"n/a\",({prod_cell}-{prior_cell})/{prior_cell})",
-            "(value[y] - value[y-1]) / value[y-1]",
-        ])
-        kpi_ws.append([
-            "5-Year CAGR",
-            f"=IF({cagr_start_cell}<=0,\"n/a\",({prod_cell}/{cagr_start_cell})^(1/5)-1)",
-            "(value[y] / value[y-5]) ^ (1/5) - 1",
-        ])
+        kpi_ws.append(
+            [
+                "Projected Production (selected year)",
+                f"={prod_cell}",
+                "Direct lookup of selected year from Historical sheet.",
+            ]
+        )
+        kpi_ws.append(
+            [
+                "YoY Growth Rate",
+                f'=IF({prior_cell}=0,"n/a",({prod_cell}-{prior_cell})/{prior_cell})',
+                "(value[y] - value[y-1]) / value[y-1]",
+            ]
+        )
+        kpi_ws.append(
+            [
+                "5-Year CAGR",
+                f'=IF({cagr_start_cell}<=0,"n/a",({prod_cell}/{cagr_start_cell})^(1/5)-1)',
+                "(value[y] / value[y-5]) ^ (1/5) - 1",
+            ]
+        )
         # Format growth and CAGR as percentages.
         kpi_ws["B7"].number_format = "0.00%"
         kpi_ws["B8"].number_format = "0.00%"
@@ -191,11 +206,13 @@ def build_workbook(
         kpi_ws.append(["Revenue Potential (illustrative, USD)", rev_formula, rev_note])
         kpi_ws["B9"].number_format = '"USD" #,##0'
     else:
-        kpi_ws.append([
-            "Projected Production",
-            "Selected year is forecast",
-            "See Forecast sheet for the projected value and confidence band.",
-        ])
+        kpi_ws.append(
+            [
+                "Projected Production",
+                "Selected year is forecast",
+                "See Forecast sheet for the projected value and confidence band.",
+            ]
+        )
 
     _autosize(kpi_ws)
 

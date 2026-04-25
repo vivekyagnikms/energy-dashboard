@@ -4,9 +4,9 @@ Feeds recorded EIA-shape rows through the full pipeline:
     raw rows -> normalize -> ForecastEngine -> compute_kpi_set
 and checks the KPI bundle is internally consistent.
 """
+
 from __future__ import annotations
 
-import pandas as pd
 
 from src.data.loader import _normalize_rows
 from src.data.schema import Product
@@ -14,10 +14,18 @@ from src.forecast.engine import ForecastEngine
 from src.kpis.calculators import compute_kpi_set
 
 
-def _monthly_rows(year: int, area: str, monthly_value: float, units: str = "MBBL") -> list[dict]:
+def _monthly_rows(
+    year: int, area: str, monthly_value: float, units: str = "MBBL"
+) -> list[dict]:
     return [
-        {"period": f"{year}-{m:02d}", "duoarea": area, "value": str(monthly_value),
-         "units": units, "product": "EPC0", "process": "FPF"}
+        {
+            "period": f"{year}-{m:02d}",
+            "duoarea": area,
+            "value": str(monthly_value),
+            "units": units,
+            "product": "EPC0",
+            "process": "FPF",
+        }
         for m in range(1, 13)
     ]
 
@@ -56,11 +64,19 @@ def test_pipeline_partial_year_excluded_from_forecast():
     for i in range(7):
         raw.extend(_monthly_rows(2017 + i, "STX", 100_000))
     # 2024 only has 3 months reported.
-    raw.extend([
-        {"period": f"2024-{m:02d}", "duoarea": "STX", "value": "100000",
-         "units": "MBBL", "product": "EPC0", "process": "FPF"}
-        for m in range(1, 4)
-    ])
+    raw.extend(
+        [
+            {
+                "period": f"2024-{m:02d}",
+                "duoarea": "STX",
+                "value": "100000",
+                "units": "MBBL",
+                "product": "EPC0",
+                "process": "FPF",
+            }
+            for m in range(1, 4)
+        ]
+    )
 
     df = _normalize_rows(raw, Product.CRUDE_OIL)
     engine = ForecastEngine(df)

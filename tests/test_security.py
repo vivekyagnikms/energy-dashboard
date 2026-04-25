@@ -7,9 +7,9 @@ We verify:
 - API-key-shaped tokens redacted from log strings
 - refusal prefix detected by chat layer (string contract test)
 """
+
 from __future__ import annotations
 
-import pytest
 
 from src.ai.chat import REFUSAL_PREFIX, _cross_check_numbers, ToolCallRecord
 from src.utils.security import (
@@ -82,23 +82,27 @@ def test_refusal_prefix_constant_unchanged():
 
 def test_unverified_numbers_detected():
     # Tool returned 100.0; LLM claims 999.0 — should be flagged as unverified.
-    rec = ToolCallRecord(name="get_production", args={},
-                         result={"data": {"value": 100.0}, "ok": True})
+    rec = ToolCallRecord(
+        name="get_production", args={}, result={"data": {"value": 100.0}, "ok": True}
+    )
     answer = "Production was 999 MBBL in 2022."
     unverified = _cross_check_numbers(answer, [rec])
     assert "999" in unverified
 
 
 def test_verified_numbers_not_flagged():
-    rec = ToolCallRecord(name="get_production", args={},
-                         result={"data": {"value": 1234567.89}})
+    rec = ToolCallRecord(
+        name="get_production", args={}, result={"data": {"value": 1234567.89}}
+    )
     answer = "Production reached 1,234,568 MBBL."  # rounded version of 1234567.89
     unverified = _cross_check_numbers(answer, [rec])
     assert unverified == []
 
 
 def test_year_tokens_are_not_treated_as_unverified_figures():
-    rec = ToolCallRecord(name="get_production", args={}, result={"data": {"value": 1000.0}})
+    rec = ToolCallRecord(
+        name="get_production", args={}, result={"data": {"value": 1000.0}}
+    )
     answer = "Texas produced about 1,000 MBBL in 2022."
     unverified = _cross_check_numbers(answer, [rec])
     # 2022 should be skipped; 1000 is verified.

@@ -9,6 +9,7 @@ Resilience layers (outer to inner):
     2. Live EIA API
     3. Committed seed snapshot at data/seed/
 """
+
 from __future__ import annotations
 
 import logging
@@ -70,9 +71,7 @@ def _build_params(query: dict, start_year: int) -> dict[str, str]:
     }
 
 
-def _fetch_product(
-    client: EIAClient, product: str, start_year: int
-) -> list[dict]:
+def _fetch_product(client: EIAClient, product: str, start_year: int) -> list[dict]:
     """Fetch monthly rows from EIA for a single product across all areas."""
     query = _QUERIES[product]
     params = _build_params(query, start_year)
@@ -109,14 +108,15 @@ def _normalize_rows(rows: list[dict], product: str) -> pd.DataFrame:
     # Coerce types.
     df["value"] = pd.to_numeric(df["value"], errors="coerce")
     df = df.dropna(subset=["value"])
-    df["year"] = pd.to_numeric(df["period"].str.slice(0, 4), errors="coerce").astype("Int64")
+    df["year"] = pd.to_numeric(df["period"].str.slice(0, 4), errors="coerce").astype(
+        "Int64"
+    )
     df = df.dropna(subset=["year"])
     df["year"] = df["year"].astype(int)
 
     # Aggregate monthly → annual.
-    grouped = (
-        df.groupby(["duoarea", "year"], as_index=False)
-          .agg(value=("value", "sum"), n_months=("value", "size"))
+    grouped = df.groupby(["duoarea", "year"], as_index=False).agg(
+        value=("value", "sum"), n_months=("value", "size")
     )
 
     # Filter to regions we know about (drops EIA aggregates we haven't mapped).
@@ -143,7 +143,9 @@ def _fetch_and_normalize(api_key: str, start_year: int) -> pd.DataFrame:
         logger.info("Loaded %d annual rows for %s", len(df), product)
         frames.append(df)
     combined = pd.concat(frames, ignore_index=True)
-    return combined.sort_values(["product", "region_code", "year"]).reset_index(drop=True)
+    return combined.sort_values(["product", "region_code", "year"]).reset_index(
+        drop=True
+    )
 
 
 def load_production_data(

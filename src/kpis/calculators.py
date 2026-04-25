@@ -18,12 +18,12 @@ KPI definitions (full version in docs/kpi_definitions.md):
                                        (crude only; surfaced with "illustrative"
                                        label in the UI)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Final
 
-import numpy as np
 import pandas as pd
 
 from src.data.regions import REGIONS_BY_CODE
@@ -53,6 +53,7 @@ CAGR_WINDOW_YEARS: Final[int] = 5
 @dataclass(frozen=True)
 class KPISet:
     """Bundle of KPIs for one (region, product, year)."""
+
     region_code: str
     region_name: str
     product: str
@@ -64,9 +65,9 @@ class KPISet:
     is_forecast: bool
 
     # Custom KPIs
-    yoy_growth_rate: float | None       # decimal (0.10 = +10%)
-    five_year_cagr: float | None        # decimal
-    volatility: float | None            # unitless ratio
+    yoy_growth_rate: float | None  # decimal (0.10 = +10%)
+    five_year_cagr: float | None  # decimal
+    volatility: float | None  # unitless ratio
     revenue_potential_usd: float | None  # crude only; None for gas
 
     notes: list[str] = field(default_factory=list)
@@ -117,7 +118,9 @@ def get_actual_or_forecast(
         return None, False
 
 
-def yoy_growth_rate(df: pd.DataFrame, region_code: str, product: str, year: int) -> float | None:
+def yoy_growth_rate(
+    df: pd.DataFrame, region_code: str, product: str, year: int
+) -> float | None:
     """Year-over-year growth as a decimal. None if either year is missing
     or the prior year is zero."""
     series = _series(df, region_code, product)
@@ -129,7 +132,9 @@ def yoy_growth_rate(df: pd.DataFrame, region_code: str, product: str, year: int)
     return (float(series.loc[year]) - prior) / prior
 
 
-def five_year_cagr(df: pd.DataFrame, region_code: str, product: str, year: int) -> float | None:
+def five_year_cagr(
+    df: pd.DataFrame, region_code: str, product: str, year: int
+) -> float | None:
     """5-year compound annual growth rate as a decimal. None if either
     endpoint is missing or the start value is zero/negative."""
     series = _series(df, region_code, product)
@@ -143,11 +148,15 @@ def five_year_cagr(df: pd.DataFrame, region_code: str, product: str, year: int) 
     return (end_v / start_v) ** (1.0 / CAGR_WINDOW_YEARS) - 1.0
 
 
-def volatility(df: pd.DataFrame, region_code: str, product: str, year: int) -> float | None:
+def volatility(
+    df: pd.DataFrame, region_code: str, product: str, year: int
+) -> float | None:
     """Coefficient of variation of YoY % over the trailing window. None if
     fewer than 3 valid YoY observations are available."""
     series = _series(df, region_code, product)
-    window = series[(series.index <= year) & (series.index > year - VOLATILITY_WINDOW_YEARS)]
+    window = series[
+        (series.index <= year) & (series.index > year - VOLATILITY_WINDOW_YEARS)
+    ]
     if len(window) < 3:
         return None
     yoy = window.pct_change().dropna()
@@ -215,9 +224,13 @@ def compute_kpi_set(
             f"{product.replace('_', ' ')} production in EIA data."
         )
 
-    projected, is_forecast = get_actual_or_forecast(df, engine, region_code, product, year)
+    projected, is_forecast = get_actual_or_forecast(
+        df, engine, region_code, product, year
+    )
     if projected is None and not series.empty:
-        notes.append("Forecast unavailable for this year (insufficient data or horizon too far).")
+        notes.append(
+            "Forecast unavailable for this year (insufficient data or horizon too far)."
+        )
 
     return KPISet(
         region_code=region_code,
@@ -230,6 +243,8 @@ def compute_kpi_set(
         yoy_growth_rate=yoy_growth_rate(df, region_code, product, year),
         five_year_cagr=five_year_cagr(df, region_code, product, year),
         volatility=volatility(df, region_code, product, year),
-        revenue_potential_usd=revenue_potential_usd(df, engine, region_code, product, year),
+        revenue_potential_usd=revenue_potential_usd(
+            df, engine, region_code, product, year
+        ),
         notes=notes,
     )

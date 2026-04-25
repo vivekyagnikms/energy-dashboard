@@ -11,13 +11,13 @@ Design:
 - Anomaly detection is performed STATISTICALLY here. The LLM cannot
   decide what is anomalous — it can only explain flagged years.
 """
+
 from __future__ import annotations
 
 import logging
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
 
-import numpy as np
 import pandas as pd
 from google.genai import types as genai_types
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -65,6 +65,7 @@ def resolve_region_code(value: str) -> str | None:
         return "R3FM"
     # PADD shorthand: 'PADD 3', 'PADD-3', 'PADD3', 'P3', 'P 3' -> R30.
     import re as _re
+
     m = _re.search(r"\bpadd[\s\-]*(\d)\b", s_lower)
     if m:
         n = int(m.group(1))
@@ -184,6 +185,7 @@ class ListRegionsInput(BaseModel):
 class ToolResult:
     """Wrapper returned to the LLM. Always includes status so the LLM can
     react to errors gracefully without freelancing numbers."""
+
     ok: bool
     data: dict | list | None = None
     error: str | None = None
@@ -206,7 +208,9 @@ def get_production_impl(
     code = resolve_region_code(args.region)
     if code is None:
         return ToolResult(ok=False, error=f"Unknown region: {args.region!r}")
-    value, is_forecast = get_actual_or_forecast(df, engine, code, args.product, args.year)
+    value, is_forecast = get_actual_or_forecast(
+        df, engine, code, args.product, args.year
+    )
     if value is None:
         return ToolResult(
             ok=False,
@@ -277,14 +281,18 @@ def compare_regions_impl(
         if code is None:
             notes.append(f"unrecognized region {raw!r}; skipped")
             continue
-        value, is_forecast = get_actual_or_forecast(df, engine, code, args.product, args.year)
-        rows.append({
-            "region": _name_for(code),
-            "region_code": code,
-            "value": (round(float(value), 2) if value is not None else None),
-            "is_forecast": bool(is_forecast) if value is not None else None,
-            "available": value is not None,
-        })
+        value, is_forecast = get_actual_or_forecast(
+            df, engine, code, args.product, args.year
+        )
+        rows.append(
+            {
+                "region": _name_for(code),
+                "region_code": code,
+                "value": (round(float(value), 2) if value is not None else None),
+                "is_forecast": bool(is_forecast) if value is not None else None,
+                "available": value is not None,
+            }
+        )
     if not rows:
         return ToolResult(ok=False, error="No valid regions to compare.", notes=notes)
     unit = "MBBL" if args.product == Product.CRUDE_OIL else "MMCF"
@@ -333,19 +341,28 @@ def get_anomalies_impl(
     mean = float(yoy.mean())
     std = float(yoy.std(ddof=1))
     if std < 1e-9:
-        return ToolResult(ok=True, data={"anomalies": [], "method": "z>2.5 on YoY%",
-                                          "mean_yoy": mean, "std_yoy": std})
+        return ToolResult(
+            ok=True,
+            data={
+                "anomalies": [],
+                "method": "z>2.5 on YoY%",
+                "mean_yoy": mean,
+                "std_yoy": std,
+            },
+        )
     z = (yoy - mean) / std
     flagged = []
     for year, score in z.items():
         if abs(score) >= args.z_threshold:
-            flagged.append({
-                "year": int(year),
-                "yoy_pct": round(float(yoy.loc[year]) * 100, 2),
-                "z_score": round(float(score), 2),
-                "value": round(float(series.loc[year]), 2),
-                "prior_value": round(float(series.loc[year - 1]), 2),
-            })
+            flagged.append(
+                {
+                    "year": int(year),
+                    "yoy_pct": round(float(yoy.loc[year]) * 100, 2),
+                    "z_score": round(float(score), 2),
+                    "value": round(float(series.loc[year]), 2),
+                    "prior_value": round(float(series.loc[year - 1]), 2),
+                }
+            )
     flagged.sort(key=lambda r: -abs(r["z_score"]))
     return ToolResult(
         ok=True,
@@ -380,12 +397,14 @@ def list_regions_impl(
     for r in ALL_REGIONS:
         if group_filter and r.group is not group_filter:
             continue
-        out.append({
-            "code": r.code,
-            "name": r.name,
-            "group": r.group.value,
-            "has_data": r.code in have_data,
-        })
+        out.append(
+            {
+                "code": r.code,
+                "name": r.name,
+                "group": r.group.value,
+                "has_data": r.code in have_data,
+            }
+        )
     return ToolResult(ok=True, data={"regions": out})
 
 
@@ -416,8 +435,13 @@ def _build_function_declarations() -> list[genai_types.FunctionDeclaration]:
             parameters=SCHEMA(
                 type=OBJ,
                 properties={
-                    "region": SCHEMA(type=STR, description="Region name, EIA code, or 2-letter state abbr (e.g. 'Texas', 'STX', 'TX', 'United States', 'PADD 3')"),
-                    "product": SCHEMA(type=STR, description="'crude_oil' or 'natural_gas'"),
+                    "region": SCHEMA(
+                        type=STR,
+                        description="Region name, EIA code, or 2-letter state abbr (e.g. 'Texas', 'STX', 'TX', 'United States', 'PADD 3')",
+                    ),
+                    "product": SCHEMA(
+                        type=STR, description="'crude_oil' or 'natural_gas'"
+                    ),
                     "year": SCHEMA(type=INT, description="Calendar year"),
                 },
                 required=["region", "product", "year"],
@@ -433,7 +457,9 @@ def _build_function_declarations() -> list[genai_types.FunctionDeclaration]:
                 type=OBJ,
                 properties={
                     "region": SCHEMA(type=STR),
-                    "product": SCHEMA(type=STR, description="'crude_oil' or 'natural_gas'"),
+                    "product": SCHEMA(
+                        type=STR, description="'crude_oil' or 'natural_gas'"
+                    ),
                     "start_year": SCHEMA(type=INT),
                     "end_year": SCHEMA(type=INT),
                 },
@@ -514,7 +540,9 @@ def _build_function_declarations() -> list[genai_types.FunctionDeclaration]:
     ]
 
 
-FUNCTION_DECLARATIONS: list[genai_types.FunctionDeclaration] = _build_function_declarations()
+FUNCTION_DECLARATIONS: list[genai_types.FunctionDeclaration] = (
+    _build_function_declarations()
+)
 
 
 # ============================================================
@@ -523,12 +551,12 @@ FUNCTION_DECLARATIONS: list[genai_types.FunctionDeclaration] = _build_function_d
 
 
 _DISPATCH: dict[str, tuple[type[BaseModel], Callable[..., ToolResult]]] = {
-    "get_production":  (GetProductionInput,  get_production_impl),
-    "get_history":     (GetHistoryInput,     get_history_impl),
+    "get_production": (GetProductionInput, get_production_impl),
+    "get_history": (GetHistoryInput, get_history_impl),
     "compare_regions": (CompareRegionsInput, compare_regions_impl),
-    "get_kpis":        (GetKpisInput,        get_kpis_impl),
-    "get_anomalies":   (GetAnomaliesInput,   get_anomalies_impl),
-    "list_regions":    (ListRegionsInput,    list_regions_impl),
+    "get_kpis": (GetKpisInput, get_kpis_impl),
+    "get_anomalies": (GetAnomaliesInput, get_anomalies_impl),
+    "list_regions": (ListRegionsInput, list_regions_impl),
 }
 
 
@@ -547,13 +575,17 @@ def execute_tool(
     try:
         validated = model_cls.model_validate(raw_args)
     except ValidationError as e:
-        return asdict(ToolResult(
-            ok=False,
-            error=f"Invalid arguments for {name}: {e.errors(include_url=False)}",
-        ))
+        return asdict(
+            ToolResult(
+                ok=False,
+                error=f"Invalid arguments for {name}: {e.errors(include_url=False)}",
+            )
+        )
     try:
         result = impl(df, engine, validated)
-    except Exception as e:  # tool implementations should not throw, but defense in depth
+    except (
+        Exception
+    ) as e:  # tool implementations should not throw, but defense in depth
         logger.exception("Tool %s raised", name)
         return asdict(ToolResult(ok=False, error=f"Tool {name} crashed: {e}"))
     return asdict(result)

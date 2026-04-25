@@ -8,9 +8,9 @@ dict payloads EIA actually returns and verify our handling of:
 - unknown duoarea filtering
 - missing/zero values
 """
+
 from __future__ import annotations
 
-import pandas as pd
 import pytest
 
 from src.data.loader import _normalize_rows
@@ -20,8 +20,12 @@ from src.data.schema import Product
 def _row(*, period: str, duoarea: str, value: str, units: str = "MBBL") -> dict:
     """Minimal EIA-shape row for tests."""
     return {
-        "period": period, "duoarea": duoarea, "value": value, "units": units,
-        "product": "EPC0", "process": "FPF",
+        "period": period,
+        "duoarea": duoarea,
+        "value": value,
+        "units": units,
+        "product": "EPC0",
+        "process": "FPF",
     }
 
 
@@ -29,7 +33,7 @@ def test_crude_filter_drops_mbbl_per_day_rows():
     # Two rows for the same (region, period): one in MBBL (kept), one MBBL/D (dropped).
     rows = [
         _row(period="2023-01", duoarea="NUS", value="391000", units="MBBL"),
-        _row(period="2023-01", duoarea="NUS", value="12640",  units="MBBL/D"),
+        _row(period="2023-01", duoarea="NUS", value="12640", units="MBBL/D"),
     ]
     df = _normalize_rows(rows, Product.CRUDE_OIL)
     assert len(df) == 1
@@ -51,8 +55,7 @@ def test_monthly_to_annual_aggregation_sums_within_year():
 
 def test_partial_year_tracked_in_n_months():
     rows = [
-        _row(period=f"2026-{m:02d}", duoarea="STX", value="100000")
-        for m in range(1, 4)
+        _row(period=f"2026-{m:02d}", duoarea="STX", value="100000") for m in range(1, 4)
     ]
     df = _normalize_rows(rows, Product.CRUDE_OIL)
     assert df["n_months"].iloc[0] == 3
@@ -88,8 +91,14 @@ def test_empty_input_returns_empty_typed_dataframe():
 
 def test_natural_gas_uses_mmcf_unit():
     rows = [
-        {"period": "2023-01", "duoarea": "STX", "value": "1000",
-         "units": "MMCF", "product": "EPG0", "process": "VGM"},
+        {
+            "period": "2023-01",
+            "duoarea": "STX",
+            "value": "1000",
+            "units": "MMCF",
+            "product": "EPG0",
+            "process": "VGM",
+        },
     ]
     df = _normalize_rows(rows, Product.NATURAL_GAS)
     assert df["unit"].iloc[0] == "MMCF"

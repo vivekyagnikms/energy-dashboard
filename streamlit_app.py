@@ -6,6 +6,7 @@ Run locally:
 Deploys to Streamlit Community Cloud unchanged; secrets come from
 .streamlit/secrets.toml locally and the Streamlit Cloud dashboard in prod.
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,7 +17,6 @@ import streamlit as st
 
 from src.ai.client import GeminiClient
 from src.data.loader import load_production_data
-from src.data.schema import Product
 from src.forecast.engine import ForecastEngine
 from src.kpis.calculators import compute_kpi_set
 from src.ui.charts import render_history_forecast_chart
@@ -89,7 +89,8 @@ def main() -> None:
         st.divider()
         render_ai_panel(
             client=_ai_client(),
-            df=df, engine=engine,
+            df=df,
+            engine=engine,
             region_code=selection.region.code,
             region_name=selection.region.name,
             product=selection.product,
@@ -100,8 +101,11 @@ def main() -> None:
 
     # --- KPIs ---
     kpis = compute_kpi_set(
-        df, engine,
-        selection.region.code, selection.product, selection.year,
+        df,
+        engine,
+        selection.region.code,
+        selection.product,
+        selection.year,
     )
     render_kpi_cards(kpis)
 
@@ -123,7 +127,8 @@ def main() -> None:
 
     # --- Tools row: Excel export, provenance, sensitivity ---
     render_tools_panel(
-        df=df, engine=engine,
+        df=df,
+        engine=engine,
         region_code=selection.region.code,
         region_name=selection.region.name,
         product=selection.product,
@@ -136,7 +141,8 @@ def main() -> None:
     # --- AI panel ---
     render_ai_panel(
         client=_ai_client(),
-        df=df, engine=engine,
+        df=df,
+        engine=engine,
         region_code=selection.region.code,
         region_name=selection.region.name,
         product=selection.product,

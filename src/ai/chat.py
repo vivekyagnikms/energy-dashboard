@@ -10,6 +10,7 @@ Guardrail layers applied here:
 - Audit trail: every tool call (name, args, result) is captured for the
   'Show grounding' expander.
 """
+
 from __future__ import annotations
 
 import logging
@@ -139,10 +140,7 @@ def _cross_check_numbers(text: str, records: list[ToolCallRecord]) -> list[str]:
             v = float(tok.replace(",", ""))
         except ValueError:
             continue
-        is_match = any(
-            abs(v - tv) <= max(abs(tv) * 0.01, 0.05)
-            for tv in tool_numbers
-        )
+        is_match = any(abs(v - tv) <= max(abs(tv) * 0.01, 0.05) for tv in tool_numbers)
         if not is_match:
             unverified.append(tok)
     return unverified
@@ -161,7 +159,9 @@ def _history_to_contents(
         text = str(h.get("text", ""))
         if not text:
             continue
-        contents.append(genai_types.Content(role=role, parts=[genai_types.Part(text=text)]))
+        contents.append(
+            genai_types.Content(role=role, parts=[genai_types.Part(text=text)])
+        )
     contents.append(
         genai_types.Content(role="user", parts=[genai_types.Part(text=user_message)])
     )
@@ -212,10 +212,15 @@ def run_chat_turn(
                 iterations=iteration,
             )
         candidate = resp.candidates[0]
-        parts = list(candidate.content.parts) if candidate.content and candidate.content.parts else []
+        parts = (
+            list(candidate.content.parts)
+            if candidate.content and candidate.content.parts
+            else []
+        )
 
-        function_calls = [p.function_call for p in parts
-                          if getattr(p, "function_call", None)]
+        function_calls = [
+            p.function_call for p in parts if getattr(p, "function_call", None)
+        ]
 
         if function_calls:
             # Echo the model's function-call message back into contents...
@@ -225,7 +230,9 @@ def run_chat_turn(
             for fc in function_calls:
                 args = dict(fc.args) if fc.args else {}
                 tool_result = execute_tool(fc.name, args, df, engine)
-                records.append(ToolCallRecord(name=fc.name, args=args, result=tool_result))
+                records.append(
+                    ToolCallRecord(name=fc.name, args=args, result=tool_result)
+                )
                 response_parts.append(
                     genai_types.Part.from_function_response(
                         name=fc.name,

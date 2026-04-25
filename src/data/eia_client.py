@@ -6,6 +6,7 @@ queries (crude oil vs natural gas, regions, time ranges) are constructed in
 
 EIA API docs: https://www.eia.gov/opendata/documentation.php
 """
+
 from __future__ import annotations
 
 import logging
@@ -48,7 +49,9 @@ class EIAClient:
         )
     """
 
-    def __init__(self, api_key: str, *, session: requests.Session | None = None) -> None:
+    def __init__(
+        self, api_key: str, *, session: requests.Session | None = None
+    ) -> None:
         if not api_key:
             raise ValueError("EIA API key is required")
         self._api_key = api_key
@@ -70,14 +73,18 @@ class EIAClient:
         last_error: Exception | None = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                resp = self._session.get(url, params=merged, timeout=HTTP_TIMEOUT_SECONDS)
+                resp = self._session.get(
+                    url, params=merged, timeout=HTTP_TIMEOUT_SECONDS
+                )
                 resp.raise_for_status()
                 payload = resp.json()
                 # EIA wraps results under "response" with "data" being the list of rows.
                 response_obj = payload.get("response")
                 if response_obj is None:
                     # Some error envelopes nest the message at top level.
-                    err_msg = payload.get("error") or "EIA API returned no 'response' field"
+                    err_msg = (
+                        payload.get("error") or "EIA API returned no 'response' field"
+                    )
                     raise EIAClientError(f"{err_msg} (path={path})")
                 return response_obj
             except (requests.RequestException, ValueError) as e:
@@ -93,7 +100,11 @@ class EIAClient:
                     sleep_for = INITIAL_BACKOFF_SECONDS * (2 ** (attempt - 1))
                     logger.warning(
                         "EIA fetch %s failed (attempt %d/%d): %s — retrying in %.1fs",
-                        path, attempt, MAX_RETRIES, e, sleep_for,
+                        path,
+                        attempt,
+                        MAX_RETRIES,
+                        e,
+                        sleep_for,
                     )
                     time.sleep(sleep_for)
 

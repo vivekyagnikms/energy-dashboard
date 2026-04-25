@@ -6,6 +6,7 @@ Two layers:
 - sanitize_for_log: redact what looks like API keys before we log a string,
   in case a stack-trace ever lands in CloudWatch / GitHub Actions output.
 """
+
 from __future__ import annotations
 
 import re
@@ -24,7 +25,9 @@ _KEY_LIKE_RE = re.compile(
 )
 
 
-def sanitize_user_text(text: str | None, *, max_chars: int = MAX_USER_INPUT_CHARS) -> str:
+def sanitize_user_text(
+    text: str | None, *, max_chars: int = MAX_USER_INPUT_CHARS
+) -> str:
     """Return a safe version of user-supplied text. Empty string if input is
     None, empty, or all whitespace after sanitization."""
     if text is None:

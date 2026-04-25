@@ -5,6 +5,7 @@ Used in two scenarios:
 2. Live demo when the free Gemini tier is exhausted (circuit breaker
    in client.py flips, ChatRunner returns one of these instead of erroring).
 """
+
 from __future__ import annotations
 
 from typing import Final
@@ -30,7 +31,9 @@ SUMMARY_FALLBACK: Final[dict] = {
         "See the chart on this page for the multi-year production trend.",
         "KPI cards above show YoY growth, 5-year CAGR, and volatility for the selected year.",
     ],
-    "caveats": ["This is a mock-mode summary; the live narrative is unavailable right now."],
+    "caveats": [
+        "This is a mock-mode summary; the live narrative is unavailable right now."
+    ],
     "confidence": "low",
 }
 
