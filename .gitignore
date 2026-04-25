@@ -3,13 +3,28 @@ node_modules/
 .pnp
 .pnp.js
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
 
 # Environment variables — never commit your keys
 .env
 .env.local
 .env.*.local
+.streamlit/secrets.toml
+
+# Local data cache (parquet snapshots fetched at runtime)
+# Note: a small bundled fallback dataset IS committed under data/seed/
+data/cache/
+data/*.parquet
+!data/seed/
+
+# Streamlit runtime
+.streamlit/streamlit_cache/
 
 # Build outputs
 dist/

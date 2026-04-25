@@ -1,0 +1,29 @@
+# --- Core app ---
+streamlit==1.56.0
+streamlit-extras==1.5.0
+pandas==3.0.2
+numpy==2.4.4
+plotly==6.7.0
+
+# --- Data fetching ---
+requests==2.33.1
+
+# --- Forecasting ---
+scikit-learn==1.8.0
+statsmodels==0.14.6
+
+# --- AI (Google Gemini) ---
+google-genai==1.73.1
+
+# --- Validation ---
+pydantic==2.13.3
+
+# --- Excel export ---
+openpyxl==3.1.5
+
+# --- Testing ---
+pytest==9.0.3
+
+# --- Dev tooling (not strictly needed at runtime, but kept for reproducibility) ---
+ruff==0.15.12
+pip-audit==2.10.0
