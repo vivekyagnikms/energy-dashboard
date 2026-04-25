@@ -24,6 +24,7 @@ from src.ui.chat_panel import render_ai_panel
 from src.ui.empty_state import render_empty_state
 from src.ui.kpi_cards import render_kpi_cards
 from src.ui.sidebar import render_sidebar
+from src.ui.tools_panel import render_tools_panel
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s | %(message)s")
 
@@ -118,6 +119,16 @@ def main() -> None:
         selected_year=selection.year,
         end_year=chart_end,
         unit=unit,
+    )
+
+    # --- Tools row: Excel export, provenance, sensitivity ---
+    render_tools_panel(
+        df=df, engine=engine,
+        region_code=selection.region.code,
+        region_name=selection.region.name,
+        product=selection.product,
+        selected_year=selection.year,
+        forecast_end_year=chart_end,
     )
 
     st.divider()
