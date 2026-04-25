@@ -27,6 +27,17 @@ This document describes how the U.S. Oil & Gas Production Intelligence dashboard
 - **PADD coverage:** plan had us fetching just five named states; the user requested full national coverage during build, so we added all 5 PADDs + Federal Offshore GoM + 50 states + DC. The faceted-query approach made this a low-cost change.
 - **AI feature triggers:** plan had auto-summary firing on every region change. Free-tier rate limits made that infeasible; switched to on-demand button triggers for both auto-summary and anomaly detection. Conserves quota for explicit user actions during judging.
 
+**Tier 3 additions (beyond the original plan):**
+
+- **Tab restructure (UX):** original plan was single-page; added 5-tab layout (Overview / Compare / Map / Recommendations / About) so each Tier-3 feature has its own real estate without cluttering the headline view.
+- **Live commodity prices** (`src/data/prices.py`): WTI from `/petroleum/pri/spt/` (RWTC daily) and Henry Hub from `/natural-gas/pri/fut/` (RNGWHHD monthly). Promotes Revenue Potential from "illustrative constants" to "live, last-refreshed-N-days-ago." Falls back to constants on failure; UI discloses live vs illustrative.
+- **U.S. choropleth map tab** (`src/ui/map_view.py`): Plotly `locationmode="USA-states"` with YlOrRd color scale.
+- **Multi-region comparison tab** (`src/ui/compare_view.py`): 2-5 regions overlaid with distinct colors, side-by-side KPI table.
+- **AI investment recommendation engine** (`src/ai/recommend.py`): deterministic composite score ranks regions; LLM narrates top-5 with structured-output Pydantic schema. Filters out aggregates and tiny-base producers so the ranking is BD-meaningful.
+- **Walk-forward backtester** (`src/forecast/backtest.py`): every region's forecast accuracy measured by walking forward year-by-year and comparing predictions against actuals. Per-region MAPE displayed in the About tab.
+- **At-a-glance header** (`src/ui/header.py`): 5-metric strip above the tabs always shows U.S. national context regardless of selection.
+- **Chart event annotations** (`src/ui/charts.py`): faint vertical-line annotations for 2014 oil-price collapse, 2020 COVID, 2022 OPEC+ recovery — only drawn when the event year is within the chart's x-range.
+
 ---
 
 ## Folder Structure

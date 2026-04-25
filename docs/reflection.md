@@ -19,13 +19,29 @@ A single-page Streamlit dashboard for U.S. oil and gas production intelligence, 
 - Full documentation: planning, architecture, KPI definitions, walkthrough, reflection.
 - 12+ meaningful Conventional-Commits commits showing the actual build progression.
 
-**Tier 2 — three differentiators shipped:**
+**Tier 2 — fully shipped:**
 
 - **Three integrated AI features** (conversational analyst, auto-summary, anomaly explanation), with 13 layers of guardrails including number cross-check, mandatory tool use, structured outputs, refusal patterns, and a circuit-breaker mock fallback.
-- **Custom KPIs**: YoY Growth Rate, 5-year CAGR, Production Volatility, illustrative Revenue Potential.
+- **Custom KPIs**: YoY Growth Rate, 5-year CAGR, Production Volatility, Revenue Potential.
 - **Excel export with live formulas** (the KPIs sheet uses Excel formulas that reference the Historical sheet; if a user edits historical values, KPIs recompute).
 - **Data provenance popover** with source URL, fetch timestamp, coverage stats, and forecast methodology.
 - **Sensitivity slider** for stress-testing forecast assumptions ±30%.
+- **Refresh-data button** in the sidebar (clears Streamlit cache, forces re-fetch from EIA).
+- **KPI source/formula panel** with deep links to implementation files on GitHub.
+
+**Tier 3 — five major differentiators shipped:**
+
+- **(T3-A) U.S. choropleth map tab** — Plotly state-level coloring by production with a top-15 producers table for context.
+- **(T3-B) Multi-region comparison tab** — overlay 2-5 regions on one chart with distinct colors + side-by-side KPI table. Default seeded with the latest top-5 producers.
+- **(T3-C) Live commodity prices** — WTI from EIA daily spot (`/petroleum/pri/spt/`, RWTC) and Henry Hub from EIA monthly futures (`/natural-gas/pri/fut/`, RNGWHHD). Revenue Potential is no longer "illustrative" — it's the live spot-price multiplied by volume, with the as-of date visible in the at-a-glance header.
+- **(T3-D) AI investment recommendation engine** — composite opportunity score (`1.0·z(scale) + 1.5·z(5y-CAGR) − 1.0·z(volatility) + 0.5·z(acceleration)`, robust z-scores) ranks every supported region. The LLM narrates the top-5 with structured outputs and **cannot reorder, add, or remove regions**. Filters out aggregates and tiny-base producers so the ranking is BD-meaningful.
+- **(T3-E) Walk-forward forecast backtester** — re-runs every region's linear-regression forecast as if every historical year were unknown, computes per-region MAPE + bias, and visualizes actual-vs-predicted on the About tab. Median MAPE across crude regions is single-digit percent.
+
+**Additional UX polish beyond the original plan:**
+
+- **5-tab layout** (Overview / Compare / Map / Recommendations / About) so each Tier-3 feature has its own real estate.
+- **At-a-glance header strip** above the tabs: U.S. national context (crude, gas, YoY) + live commodity prices + as-of date — visible regardless of selection.
+- **Chart event annotations** for 2014 oil-price collapse, 2020 COVID, 2022 OPEC+ recovery, only drawn when the event year falls inside the chart's range.
 
 **What works:**
 
