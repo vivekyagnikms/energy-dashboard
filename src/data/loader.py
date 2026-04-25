@@ -189,12 +189,12 @@ def load_production_data(
 
 
 def refresh_seed(api_key: str, *, start_year: int = 2010) -> pd.DataFrame:
-    """Force a live fetch and persist the result as the committed seed snapshot.
-
-    Run this once during build (or when refreshing the bundled fallback) to
-    populate data/seed/eia_snapshot.parquet.
+    """Force a live fetch and persist the result as both the seed snapshot
+    and the live cache. Run during build (or when refreshing the bundled
+    fallback) to keep data/seed/ and data/cache/ in sync.
     """
     df = _fetch_and_normalize(api_key, start_year)
     write_seed(df)
-    logger.info("Wrote seed snapshot: %d rows", len(df))
+    write_parquet(df, cache_path(CACHE_NAME))
+    logger.info("Wrote seed + live cache: %d rows", len(df))
     return df
