@@ -63,16 +63,18 @@ def resolve_region_code(value: str) -> str | None:
     # Gulf of Mexico shorthand.
     if "gulf" in s_lower or "gom" in s_lower:
         return "R3FM"
-    # PADD shorthand: 'PADD 3' -> R30, 'P3' -> R30.
-    for token in (s_lower.replace("-", " ").split()):
-        if token.startswith("padd") and token[4:].isdigit():
-            n = int(token[4:])
-            if 1 <= n <= 5:
-                return f"R{n}0"
-        if token.startswith("p") and len(token) <= 2 and token[1:].isdigit():
-            n = int(token[1:])
-            if 1 <= n <= 5:
-                return f"R{n}0"
+    # PADD shorthand: 'PADD 3', 'PADD-3', 'PADD3', 'P3', 'P 3' -> R30.
+    import re as _re
+    m = _re.search(r"\bpadd[\s\-]*(\d)\b", s_lower)
+    if m:
+        n = int(m.group(1))
+        if 1 <= n <= 5:
+            return f"R{n}0"
+    m = _re.search(r"\bp[\s\-]*(\d)\b", s_lower)
+    if m:
+        n = int(m.group(1))
+        if 1 <= n <= 5:
+            return f"R{n}0"
     return None
 
 
