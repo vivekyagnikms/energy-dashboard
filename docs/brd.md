@@ -47,16 +47,15 @@ A static dashboard answers (1) and (2) but misses (3) and (4). The system must c
 |---|---|---|
 | Business-development analyst | End user | Speed, confidence, defensibility |
 | Investment committee | Consumer of analyst output | Clarity, repeatability of methodology |
-| CDF Energy leadership | Hackathon sponsor | Demonstrated AI engineering judgment |
-| Hackathon judges | Evaluator | Tier 1/2/3 completeness, novelty, code quality |
-| Future maintainer (hypothetical) | Engineering ops | Onboarding-grade documentation, hermetic tests |
+| CDF Energy leadership | Sponsor | Demonstrated AI engineering judgment |
+| Future maintainer | Engineering ops | Onboarding-grade documentation, hermetic tests |
 
 ## 5. Scope
 
 ### In scope
 - U.S. crude oil and natural gas annual production data, 2010 → present, all states + national + PADDs + Federal Offshore GoM.
 - Linear-regression forecasting with 95% confidence band, 10-year horizon cap.
-- 5 KPIs (1 required + 4 custom) with formal definitions.
+- Five KPIs with formal definitions: Projected Production Estimate, YoY Growth, 5-year CAGR, Volatility, Revenue Potential.
 - Live commodity prices (WTI, Henry Hub) feeding Revenue Potential.
 - AI features: conversational analyst (function-calling chat), auto-summary, anomaly detection + explanation, investment recommendation engine.
 - Excel export with live formulas, 2D sensitivity heatmap, walk-forward backtest viz.
@@ -85,13 +84,12 @@ The system is "successful" when a BD analyst can:
 
 ## 7. Constraints
 
-| Constraint | Source | Implication |
-|---|---|---|
-| 1-day build | Self-imposed (compressed timeline) | Tight prioritization; chose Streamlit over Next.js, linear regression over ML |
-| Free-tier APIs only | Hackathon rule | Gemini 2.5 Flash (5 RPM cap) → on-demand AI buttons + circuit-breaker mock fallback |
-| Public data only | Hackathon rule | EIA API v2 as primary source; combined with EIA spot-price endpoints |
-| Live URL mandatory at deadline | Hackathon rule | Streamlit Cloud GitHub-connected deploy; auto-redeploy on push |
-| Solo developer | Project context | One language end-to-end (Python); minimize moving parts |
+| Constraint | Implication |
+|---|---|
+| Free-tier external APIs | Gemini 2.5 Flash (5 RPM cap) → on-demand AI buttons + circuit-breaker mock fallback |
+| Public data sources only | EIA API v2 for production + EIA spot-price endpoints |
+| Live, hosted URL | Streamlit Cloud GitHub-connected deploy; auto-redeploy on push |
+| Single-language stack | Python end-to-end (data + forecasting + AI + UI); minimizes moving parts |
 
 ## 8. Risks & Mitigations (business-level)
 

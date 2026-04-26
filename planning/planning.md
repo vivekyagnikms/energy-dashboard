@@ -1,10 +1,8 @@
 # Planning Document
 
-> Written **before code**. Captures the problem framing, design decisions, scope tradeoffs, and risks we entered the build with. Compared against `docs/architecture.md` (final state) and `docs/reflection.md` (post-build reflection).
+> Written **before code**. Captures the problem framing, design decisions, scope priorities, and risks we entered the build with. Compared against `docs/architecture.md` for the final state.
 
 **Author:** Vivek Yagnik
-**Submission deadline:** 2026-04-25 23:59 EDT
-**Time budget at planning start:** ~19 hours (single dev, with sleep)
 
 ---
 

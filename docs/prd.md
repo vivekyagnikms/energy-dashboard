@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 
 **Product:** U.S. Oil & Gas Production Intelligence System
-**Version:** 1.0 (hackathon submission)
+**Version:** 1.0
 **Owner:** Vivek Yagnik
 **Status:** Submitted
 
@@ -26,7 +26,7 @@ A 5-tab decision-support tool that lets a business-development analyst at an ene
 ### Secondary personas
 
 - **Investment Committee member** — opens the live URL once before a meeting; expects immediate clarity, no setup.
-- **Hackathon judge** — evaluates against the rubric; expects every number to be traceable, every claim defensible.
+- **Reviewer** — opens the live URL cold; expects every number to be traceable, every claim defensible.
 - **Future maintainer** — picks up the codebase 6 months later; expects onboarding-grade docs.
 
 ## 3. User Stories
