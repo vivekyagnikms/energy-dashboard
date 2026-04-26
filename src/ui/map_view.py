@@ -46,36 +46,17 @@ def render_map_tab(
     prices: CommodityPrices,
     selection,
 ) -> None:
+    """Choropleth driven by the sidebar product + year. Single source of truth
+    keeps every tab reactive to one selection."""
+    product = selection.product
+    year = int(selection.year)
+
     st.header("🗺️ Production map of the United States")
     st.caption(
-        "Each producing state is colored by its production for the chosen "
-        "product and year. Forecast values for future years are shown the "
-        "same way and labeled in the table below."
+        f"Each producing state colored by its **{('crude oil' if product == Product.CRUDE_OIL else 'natural gas')}** "
+        f"production in **{year}**. Future years are forecast values; flagged in the "
+        f"table below. Change product or year via the sidebar."
     )
-
-    # ---- Local controls (don't pollute sidebar selection) ----
-    c1, c2 = st.columns(2)
-    with c1:
-        product_label = st.radio(
-            "Product",
-            options=("Crude Oil", "Natural Gas"),
-            horizontal=True,
-            index=0 if selection.product == Product.CRUDE_OIL else 1,
-            key="map_product",
-        )
-        product = (
-            Product.CRUDE_OIL if product_label == "Crude Oil" else Product.NATURAL_GAS
-        )
-    with c2:
-        years, default_year = _build_year_options(df)
-        year = st.slider(
-            "Year",
-            min_value=min(years) if years else 2010,
-            max_value=max(years) if years else 2030,
-            value=int(selection.year) if int(selection.year) in years else default_year,
-            step=1,
-            key="map_year",
-        )
 
     # ---- Build the map dataframe ----
     rows: list[dict] = []

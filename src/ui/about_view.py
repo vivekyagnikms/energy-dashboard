@@ -33,6 +33,7 @@ def render_about_tab(
     df: pd.DataFrame,
     engine: ForecastEngine,
     prices: CommodityPrices,
+    selection,
 ) -> None:
     st.header("🔬 About & methodology")
     st.caption(
@@ -95,14 +96,12 @@ def render_about_tab(
         "all such holdout years."
     )
 
-    bt_product = st.radio(
-        "Product",
-        options=("Crude Oil", "Natural Gas"),
-        horizontal=True,
-        key="bt_product",
-    )
-    product_code = (
-        Product.CRUDE_OIL if bt_product == "Crude Oil" else Product.NATURAL_GAS
+    # Backtest follows the sidebar product so the rest of the dashboard's
+    # selection drives this view too.
+    product_code = selection.product
+    bt_product = "Crude Oil" if product_code == Product.CRUDE_OIL else "Natural Gas"
+    st.caption(
+        f"Showing backtest for **{bt_product}** (drive product via the sidebar)."
     )
 
     with st.spinner("Running walk-forward backtest…"):

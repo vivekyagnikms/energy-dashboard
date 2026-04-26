@@ -49,39 +49,20 @@ def render_compare_tab(
     df: pd.DataFrame,
     engine: ForecastEngine,
     prices: CommodityPrices,
+    selection,
 ) -> None:
+    """Compare 2-5 regions overlaid. Driven by the sidebar's product + year
+    so switching either there reactively re-renders this tab."""
+    product = selection.product
+    year = selection.year
+    product_label = "Crude Oil" if product == Product.CRUDE_OIL else "Natural Gas"
+
     st.header("🆚 Compare regions")
     st.caption(
-        "Overlay the production history + forecast for 2 to 5 regions on one "
-        "chart, with a side-by-side KPI table for the selected year."
+        f"Overlaying production history + forecast for 2-5 regions on one "
+        f"chart, with a KPI table for **{year}**. Product and year follow the "
+        f"sidebar — change them there to drive every tab in sync."
     )
-
-    # ---- Controls ----
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        product_label = st.radio(
-            "Product",
-            options=("Crude Oil", "Natural Gas"),
-            horizontal=True,
-            key="compare_product",
-        )
-        product = (
-            Product.CRUDE_OIL if product_label == "Crude Oil" else Product.NATURAL_GAS
-        )
-    with c2:
-        last_full = (
-            int(df.loc[df["n_months"] >= 12, "year"].max())
-            if (df["n_months"] >= 12).any()
-            else int(df["year"].max())
-        )
-        year = st.slider(
-            "Year (for the KPI table)",
-            min_value=int(df["year"].min()),
-            max_value=last_full + 5,
-            value=last_full,
-            step=1,
-            key="compare_year",
-        )
 
     supported = _supported_regions(df, engine, product)
     if not supported:
@@ -92,11 +73,13 @@ def render_compare_tab(
     defaults = _default_top5(df, engine, product)
     defaults = [d for d in defaults if d in region_names][:5]
 
+    # Product-scoped key so switching crude<->gas resets to that product's
+    # top-5 default instead of carrying the prior product's selection over.
     selected_names = st.multiselect(
         "Regions to compare (2–5)",
         options=region_names,
         default=defaults if len(defaults) >= 2 else region_names[:5],
-        key="compare_regions",
+        key=f"compare_regions_{product}",
         help="Includes national, PADDs, and producing states.",
     )
 
@@ -129,7 +112,7 @@ def render_compare_tab(
             )
 
         # Forecast extension for the same region.
-        last_full_year = int(history["year"].max()) if not history.empty else last_full
+        last_full_year = int(history["year"].max()) if not history.empty else year
         fc = engine.forecast_range(region.code, product, end_year=last_full_year + 5)
         if not fc.empty and not history.empty:
             # Connect last history point to forecast for visual continuity.

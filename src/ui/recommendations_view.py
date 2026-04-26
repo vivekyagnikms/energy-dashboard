@@ -17,46 +17,21 @@ def render_recommendations_tab(
     engine: ForecastEngine,
     prices: CommodityPrices,
     client: GeminiClient,
-    *,
-    selected_product: str,
-    selected_year: int,
+    selection,
 ) -> None:
+    """Recommendation engine driven by the sidebar product. Year is display-only
+    (the composite score uses the most recent full year regardless of slider)."""
+    product = selection.product
+    year = int(selection.year)
+    product_label = "Crude Oil" if product == Product.CRUDE_OIL else "Natural Gas"
+
     st.header("🎯 Investment recommendations")
     st.caption(
-        "A composite opportunity score ranks every supported region; Gemini "
-        "narrates the top 5 with grounded explanations. Score weights, score "
-        "components, and full ranking are all visible — no black boxes."
+        f"Composite opportunity score ranks every supported region for "
+        f"**{product_label}**; Gemini narrates the top 5 with grounded "
+        f"explanations. Score weights, score components, and full ranking are "
+        f"all visible — no black boxes. Change product via the sidebar."
     )
-
-    # ---- Controls ----
-    c1, c2 = st.columns([1, 1])
-    with c1:
-        product_label = st.radio(
-            "Product",
-            options=("Crude Oil", "Natural Gas"),
-            horizontal=True,
-            index=0 if selected_product == Product.CRUDE_OIL else 1,
-            key="rec_product",
-        )
-        product = (
-            Product.CRUDE_OIL if product_label == "Crude Oil" else Product.NATURAL_GAS
-        )
-    with c2:
-        last_full = (
-            int(df.loc[df["n_months"] >= 12, "year"].max())
-            if (df["n_months"] >= 12).any()
-            else int(df["year"].max())
-        )
-        year = st.slider(
-            "Year (display only — score uses most recent full year)",
-            min_value=int(df["year"].min()),
-            max_value=last_full + 5,
-            value=int(selected_year)
-            if int(selected_year) <= last_full + 5
-            else last_full,
-            step=1,
-            key="rec_year",
-        )
 
     # ---- Trigger button (don't burn quota on every rerun) ----
     if st.button(

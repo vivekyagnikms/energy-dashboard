@@ -210,23 +210,16 @@ def main() -> None:
         _render_overview_tab(df, engine, prices, selection)
 
     with compare_tab:
-        render_compare_tab(df, engine, prices)
+        render_compare_tab(df, engine, prices, selection)
 
     with map_tab:
         render_map_tab(df, engine, prices, selection)
 
     with recs_tab:
-        render_recommendations_tab(
-            df,
-            engine,
-            prices,
-            _ai_client(),
-            selected_product=selection.product,
-            selected_year=selection.year,
-        )
+        render_recommendations_tab(df, engine, prices, _ai_client(), selection)
 
     with about_tab:
-        render_about_tab(df, engine, prices)
+        render_about_tab(df, engine, prices, selection)
 
     # --- Footer ---
     st.divider()
