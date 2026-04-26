@@ -163,6 +163,7 @@ def _render_overview_tab(
         product=selection.product,
         selected_year=selection.year,
         forecast_end_year=chart_end,
+        prices=prices,
     )
 
     st.divider()

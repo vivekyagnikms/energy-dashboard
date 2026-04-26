@@ -10,6 +10,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
+from src.data.prices import CommodityPrices
 from src.data.schema import Product
 from src.forecast.engine import ForecastEngine
 from src.kpis.calculators import (
@@ -18,6 +19,7 @@ from src.kpis.calculators import (
     WTI_PRICE_USD_PER_BBL,
     get_actual_or_forecast,
 )
+from src.ui.sensitivity_view import render_sensitivity_heatmap
 from src.utils.cache import CACHE_DIR
 from src.utils.excel_export import build_workbook
 
@@ -39,6 +41,7 @@ def render_tools_panel(
     product: str,
     selected_year: int,
     forecast_end_year: int,
+    prices: CommodityPrices | None = None,
 ) -> None:
     """One row with: Excel export button, provenance expander, sensitivity slider."""
     pretty_product = "crude_oil" if product == Product.CRUDE_OIL else "natural_gas"
@@ -148,4 +151,19 @@ def render_tools_panel(
                 "Adjusted revenue (USD)",
                 f"USD {rev / 1e9:.2f}B",
                 delta=f"{delta_rev / 1e9:+.2f}B" if adj_pct != 0 else None,
+            )
+
+    # ---- 2D scenario heatmap (volume × price) ----
+    # Spans full width below the tools row; tier-2 differentiator that
+    # answers 'what if my volume AND price assumptions are both off?'
+    if prices is not None:
+        with st.expander("📊 Scenario heatmap (volume × price)", expanded=False):
+            render_sensitivity_heatmap(
+                df=df,
+                engine=engine,
+                region_code=region_code,
+                region_name=region_name,
+                product=product,
+                selected_year=selected_year,
+                prices=prices,
             )
