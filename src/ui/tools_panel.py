@@ -127,18 +127,24 @@ def render_tools_panel(
         )
         adj_factor = 1.0 + (adj_pct / 100.0)
         adj_value = base * adj_factor
-        # Revenue at adjusted volume.
-        if product == Product.CRUDE_OIL:
-            rev = adj_value * 1000.0 * WTI_PRICE_USD_PER_BBL
+        # Revenue at adjusted volume. Use live commodity prices when available;
+        # fall back to the illustrative constants only if no prices object was
+        # passed in (keeps this function callable from older code paths).
+        if prices is not None:
+            wti_used = prices.wti_usd_per_bbl
+            hh_used = prices.henry_hub_usd_per_mmbtu
         else:
-            rev = adj_value * MMBTU_PER_MMCF * HENRY_HUB_USD_PER_MMBTU
+            wti_used = WTI_PRICE_USD_PER_BBL
+            hh_used = HENRY_HUB_USD_PER_MMBTU
+        if product == Product.CRUDE_OIL:
+            rev = adj_value * 1000.0 * wti_used
+            base_rev = base * 1000.0 * wti_used
+        else:
+            rev = adj_value * MMBTU_PER_MMCF * hh_used
+            base_rev = base * MMBTU_PER_MMCF * hh_used
         unit = "MBBL" if product == Product.CRUDE_OIL else "MMCF"
         delta_value = adj_value - base
-        delta_rev = rev - (
-            base * 1000.0 * WTI_PRICE_USD_PER_BBL
-            if product == Product.CRUDE_OIL
-            else base * MMBTU_PER_MMCF * HENRY_HUB_USD_PER_MMBTU
-        )
+        delta_rev = rev - base_rev
         sub1, sub2 = st.columns(2)
         with sub1:
             st.metric(
