@@ -2,6 +2,8 @@
 
 **🌐 Live demo:** **<https://energy-platform.streamlit.app/>**
 
+**🎥 Walkthrough video:** **<https://www.loom.com/share/18bd239ad8de45008d0fcaddc048d79e>**
+
 A 5-tab Streamlit dashboard that helps a business-development analyst evaluate U.S. oil-and-gas production opportunities by region, with grounded AI analysis on top.
 
 > **Submission for the CDF Energy AI Hackathon (April 2026).** Python, Streamlit, EIA's API, and Gemini 2.5 Flash.

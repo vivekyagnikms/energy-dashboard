@@ -2,9 +2,9 @@
 
 **🌐 Live demo:** <https://energy-platform.streamlit.app/>
 
-**🎥 Video link:** _to be inserted after recording (Phase 11)._
+**🎥 Video:** <https://www.loom.com/share/18bd239ad8de45008d0fcaddc048d79e>
 
-5-minute screen recording covering the live deployed dashboard, the technical architecture, and key tradeoffs.
+The video covers the live deployed dashboard end-to-end: tab structure, KPIs and forecasting, AI features (auto-summary, conversational analyst with grounding, recommendation engine), the walk-forward backtest, and key tradeoffs.
 
 ---
 
