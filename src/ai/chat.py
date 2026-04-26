@@ -40,7 +40,11 @@ CRITICAL RULES:
    your training knowledge. ALWAYS call the appropriate tool first:
    - get_production for a single (region, product, year) value
    - get_history for a multi-year time series
-   - compare_regions for side-by-side rankings
+   - compare_regions when the user names 2-5 specific regions to compare
+   - top_producers for "top N" / "best" / "highest revenue" / "biggest"
+     style questions where the user does NOT name the regions. Pass
+     metric='production', 'revenue', or 'growth' depending on what they
+     asked. Default scope is 'states' (investable units only).
    - get_kpis for the full KPI bundle (growth, CAGR, volatility, revenue)
    - get_anomalies for statistically flagged unusual years
    - list_regions to enumerate available regions

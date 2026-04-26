@@ -1,4 +1,5 @@
 """Tests for the walk-forward backtester."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -10,15 +11,28 @@ from src.forecast.backtest import (
 )
 
 
-def _df(values: dict[int, float], *, region: str = "STX",
-        region_name: str = "Texas", product: str = Product.CRUDE_OIL,
-        n_months: int = 12) -> pd.DataFrame:
-    return pd.DataFrame([
-        {"region_code": region, "region_name": region_name,
-         "product": product, "year": y, "value": v,
-         "unit": "MBBL", "n_months": n_months}
-        for y, v in values.items()
-    ])
+def _df(
+    values: dict[int, float],
+    *,
+    region: str = "STX",
+    region_name: str = "Texas",
+    product: str = Product.CRUDE_OIL,
+    n_months: int = 12,
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "region_code": region,
+                "region_name": region_name,
+                "product": product,
+                "year": y,
+                "value": v,
+                "unit": "MBBL",
+                "n_months": n_months,
+            }
+            for y, v in values.items()
+        ]
+    )
 
 
 def test_perfect_linear_input_has_near_zero_mape():
@@ -49,12 +63,14 @@ def test_backtest_all_regions_sorts_by_mape():
     # Region A: perfectly linear (low MAPE).
     a = _df(
         {2010 + i: 100.0 + 10.0 * i for i in range(12)},
-        region="STX", region_name="Texas",
+        region="STX",
+        region_name="Texas",
     )
     # Region B: noisy, will have higher MAPE.
     b = _df(
         {2010 + i: 100.0 + (10.0 * i if i % 2 == 0 else -10.0 * i) for i in range(12)},
-        region="SND", region_name="North Dakota",
+        region="SND",
+        region_name="North Dakota",
     )
     df = pd.concat([a, b], ignore_index=True)
     out = backtest_all_regions(df, Product.CRUDE_OIL)

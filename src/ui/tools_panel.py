@@ -47,7 +47,7 @@ def render_tools_panel(
     pretty_product = "crude_oil" if product == Product.CRUDE_OIL else "natural_gas"
     fname = f"{region_name.replace(' ', '_')}_{pretty_product}_{selected_year}.xlsx"
 
-    c1, c2, c3 = st.columns([1, 1, 2])
+    c1, c2 = st.columns(2)
 
     # ---- Excel export ----
     with c1:
@@ -107,56 +107,54 @@ def render_tools_panel(
                 "(z-score on YoY %); the LLM only narrates them."
             )
 
-    # ---- Sensitivity ----
-    with c3:
-        base, is_forecast = get_actual_or_forecast(
-            df, engine, region_code, product, selected_year
-        )
-        if base is None:
-            st.caption("Sensitivity unavailable: no production estimate for this year.")
-            return
-        adj_pct = st.slider(
-            "Sensitivity (forecast assumption ±%)",
-            min_value=-30,
-            max_value=30,
-            value=0,
-            step=5,
-            help="Apply a manual adjustment to the projected production value to "
-            "stress-test downstream KPIs. Shown only for the selected year.",
-            key="sensitivity_slider",
-        )
-        adj_factor = 1.0 + (adj_pct / 100.0)
-        adj_value = base * adj_factor
-        # Revenue at adjusted volume. Use live commodity prices when available;
-        # fall back to the illustrative constants only if no prices object was
-        # passed in (keeps this function callable from older code paths).
-        if prices is not None:
-            wti_used = prices.wti_usd_per_bbl
-            hh_used = prices.henry_hub_usd_per_mmbtu
-        else:
-            wti_used = WTI_PRICE_USD_PER_BBL
-            hh_used = HENRY_HUB_USD_PER_MMBTU
-        if product == Product.CRUDE_OIL:
-            rev = adj_value * 1000.0 * wti_used
-            base_rev = base * 1000.0 * wti_used
-        else:
-            rev = adj_value * MMBTU_PER_MMCF * hh_used
-            base_rev = base * MMBTU_PER_MMCF * hh_used
-        unit = "MBBL" if product == Product.CRUDE_OIL else "MMCF"
-        delta_value = adj_value - base
-        delta_rev = rev - base_rev
-        sub1, sub2 = st.columns(2)
-        with sub1:
-            st.metric(
-                f"Adjusted volume ({selected_year})",
-                f"{adj_value:,.0f} {unit}",
-                delta=f"{delta_value:+,.0f}" if adj_pct != 0 else None,
+    # ---- Quick 1D sensitivity (collapsed by default; the 2D heatmap below
+    # covers the same ground more flexibly. Kept for users who want a single-
+    # axis quick stress-test without expanding the heatmap.) ----
+    base, _ = get_actual_or_forecast(df, engine, region_code, product, selected_year)
+    if base is not None:
+        with st.expander("🎚 Quick 1D sensitivity (volume only)", expanded=False):
+            adj_pct = st.slider(
+                "Volume adjustment (±%)",
+                min_value=-30,
+                max_value=30,
+                value=0,
+                step=5,
+                help="Stress-test the projected production volume; revenue updates with live prices.",
+                key="sensitivity_slider",
             )
-        with sub2:
-            st.metric(
-                "Adjusted revenue (USD)",
-                f"USD {rev / 1e9:.2f}B",
-                delta=f"{delta_rev / 1e9:+.2f}B" if adj_pct != 0 else None,
+            adj_factor = 1.0 + (adj_pct / 100.0)
+            adj_value = base * adj_factor
+            if prices is not None:
+                wti_used = prices.wti_usd_per_bbl
+                hh_used = prices.henry_hub_usd_per_mmbtu
+            else:
+                wti_used = WTI_PRICE_USD_PER_BBL
+                hh_used = HENRY_HUB_USD_PER_MMBTU
+            if product == Product.CRUDE_OIL:
+                rev = adj_value * 1000.0 * wti_used
+                base_rev = base * 1000.0 * wti_used
+            else:
+                rev = adj_value * MMBTU_PER_MMCF * hh_used
+                base_rev = base * MMBTU_PER_MMCF * hh_used
+            unit = "MBBL" if product == Product.CRUDE_OIL else "MMCF"
+            delta_value = adj_value - base
+            delta_rev = rev - base_rev
+            sub1, sub2 = st.columns(2)
+            with sub1:
+                st.metric(
+                    f"Adjusted volume ({selected_year})",
+                    f"{adj_value:,.0f} {unit}",
+                    delta=f"{delta_value:+,.0f}" if adj_pct != 0 else None,
+                )
+            with sub2:
+                st.metric(
+                    "Adjusted revenue (USD)",
+                    f"USD {rev / 1e9:.2f}B",
+                    delta=f"{delta_rev / 1e9:+.2f}B" if adj_pct != 0 else None,
+                )
+            st.caption(
+                "For a fuller stress-test across volume × price, use the "
+                "Scenario heatmap below."
             )
 
     # ---- 2D scenario heatmap (volume × price) ----

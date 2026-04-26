@@ -4,6 +4,7 @@ Live API calls are not exercised here — they are tested manually during
 build. These tests verify the fallback contract and the label formatting,
 which is what shows up in the UI when the live fetch fails.
 """
+
 from __future__ import annotations
 
 from src.data.prices import (

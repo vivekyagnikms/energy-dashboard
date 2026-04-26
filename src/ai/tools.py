@@ -176,6 +176,54 @@ class ListRegionsInput(BaseModel):
     )
 
 
+class TopProducersInput(BaseModel):
+    product: str
+    year: int = Field(ge=1900, le=2100)
+    n: int = Field(default=5, ge=1, le=20)
+    metric: str = Field(
+        default="production",
+        description=(
+            "How to rank: 'production' (raw volume), 'revenue' (volume × "
+            "illustrative price assumption), or 'growth' (5-year CAGR over "
+            "the year ending at `year`)."
+        ),
+    )
+    scope: str = Field(
+        default="states",
+        description=(
+            "Which regions to consider: 'states' (states + Federal Offshore "
+            "Gulf of Mexico, the investable units) or 'all' (also includes "
+            "U.S. national and PADDs as context — typically not investable)."
+        ),
+    )
+
+    @field_validator("product")
+    @classmethod
+    def _normalize_product(cls, v: str) -> str:
+        norm = resolve_product(v)
+        if norm is None:
+            raise ValueError(f"unknown product {v!r}")
+        return norm
+
+    @field_validator("metric")
+    @classmethod
+    def _normalize_metric(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in {"production", "revenue", "growth"}:
+            raise ValueError(
+                f"unknown metric {v!r}; must be 'production', 'revenue', or 'growth'"
+            )
+        return v
+
+    @field_validator("scope")
+    @classmethod
+    def _normalize_scope(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in {"states", "all"}:
+            raise ValueError(f"unknown scope {v!r}; must be 'states' or 'all'")
+        return v
+
+
 # ============================================================
 # Tool output dataclasses (typed, JSON-serializable)
 # ============================================================
@@ -408,6 +456,108 @@ def list_regions_impl(
     return ToolResult(ok=True, data={"regions": out})
 
 
+def top_producers_impl(
+    df: pd.DataFrame, engine: ForecastEngine, args: TopProducersInput
+) -> ToolResult:
+    """Rank regions by a chosen metric for one product/year. Closes the
+    'top N regions' question that compare_regions can't answer (since
+    compare_regions requires the user to specify the regions up front).
+
+    Aggregates (national, PADDs) are excluded by default because they sum
+    constituent states; passing scope='all' includes them as context.
+    """
+    # Lazy imports to avoid cycles.
+    from src.kpis.calculators import (
+        HENRY_HUB_USD_PER_MMBTU,
+        MMBTU_PER_MMCF,
+        WTI_PRICE_USD_PER_BBL,
+        five_year_cagr,
+    )
+
+    candidates: list = []
+    for region in ALL_REGIONS:
+        if args.scope == "states" and region.group in (
+            RegionGroup.NATIONAL,
+            RegionGroup.PADD,
+        ):
+            continue
+        value, is_forecast = get_actual_or_forecast(
+            df, engine, region.code, args.product, args.year
+        )
+        if value is None:
+            continue
+
+        if args.metric == "production":
+            score = value
+        elif args.metric == "revenue":
+            # Use illustrative constants; the chat panel disclaimer covers this.
+            if args.product == Product.CRUDE_OIL:
+                score = value * 1000.0 * WTI_PRICE_USD_PER_BBL
+            else:
+                score = value * MMBTU_PER_MMCF * HENRY_HUB_USD_PER_MMBTU
+        else:  # growth
+            cagr = five_year_cagr(df, region.code, args.product, args.year)
+            if cagr is None:
+                continue
+            score = cagr
+
+        candidates.append(
+            {
+                "region": region.name,
+                "region_code": region.code,
+                "group": region.group.value.split(" (")[0],
+                "production": round(float(value), 2),
+                "is_forecast": bool(is_forecast),
+                "score": float(score),
+            }
+        )
+
+    if not candidates:
+        return ToolResult(
+            ok=False,
+            error=(
+                f"No producing regions found for {args.product} in {args.year} "
+                f"(scope={args.scope})."
+            ),
+        )
+
+    candidates.sort(key=lambda r: -r["score"])
+    top = candidates[: args.n]
+
+    unit = "MBBL" if args.product == Product.CRUDE_OIL else "MMCF"
+    revenue_unit = "USD"
+
+    if args.metric == "revenue":
+        for row in top:
+            row["revenue_usd"] = round(row["score"], 2)
+        ranked_unit = revenue_unit
+    elif args.metric == "growth":
+        for row in top:
+            row["growth_5yr_pct"] = round(row["score"] * 100, 2)
+        ranked_unit = "5yr-CAGR-decimal"
+    else:
+        ranked_unit = unit
+
+    return ToolResult(
+        ok=True,
+        data={
+            "product": args.product,
+            "year": args.year,
+            "metric": args.metric,
+            "scope": args.scope,
+            "production_unit": unit,
+            "ranked_unit": ranked_unit,
+            "top": top,
+            "note": (
+                "Revenue is illustrative — uses default WTI USD 75/bbl or Henry Hub USD 3.00/MMBtu. "
+                "Live commodity prices are surfaced separately on the dashboard's at-a-glance header."
+                if args.metric == "revenue"
+                else None
+            ),
+        },
+    )
+
+
 # ============================================================
 # Gemini FunctionDeclarations
 # ============================================================
@@ -537,6 +687,46 @@ def _build_function_declarations() -> list[genai_types.FunctionDeclaration]:
                 },
             ),
         ),
+        genai_types.FunctionDeclaration(
+            name="top_producers",
+            description=(
+                "Find the top-N regions for one product/year, ranked by a chosen "
+                "metric. Use this to answer 'top 5 states', 'which region produces "
+                "the most', 'best growth regions', 'highest revenue regions' style "
+                "questions. Aggregates (national, PADDs) are excluded by default "
+                "because they sum constituent states; pass scope='all' to include "
+                "them as context."
+            ),
+            parameters=SCHEMA(
+                type=OBJ,
+                properties={
+                    "product": SCHEMA(
+                        type=STR, description="'crude_oil' or 'natural_gas'"
+                    ),
+                    "year": SCHEMA(type=INT, description="Calendar year"),
+                    "n": SCHEMA(
+                        type=INT,
+                        description="How many to return (default 5, max 20)",
+                    ),
+                    "metric": SCHEMA(
+                        type=STR,
+                        description=(
+                            "Ranking metric: 'production' (raw volume), 'revenue' "
+                            "(volume × illustrative price assumption), or 'growth' "
+                            "(5-year CAGR ending at `year`). Default 'production'."
+                        ),
+                    ),
+                    "scope": SCHEMA(
+                        type=STR,
+                        description=(
+                            "'states' (states + offshore — investable units, default) "
+                            "or 'all' (also includes US national + PADDs)."
+                        ),
+                    ),
+                },
+                required=["product", "year"],
+            ),
+        ),
     ]
 
 
@@ -557,6 +747,7 @@ _DISPATCH: dict[str, tuple[type[BaseModel], Callable[..., ToolResult]]] = {
     "get_kpis": (GetKpisInput, get_kpis_impl),
     "get_anomalies": (GetAnomaliesInput, get_anomalies_impl),
     "list_regions": (ListRegionsInput, list_regions_impl),
+    "top_producers": (TopProducersInput, top_producers_impl),
 }
 
 
