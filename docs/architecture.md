@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document describes how the U.S. Oil & Gas Production Intelligence dashboard was actually built. Compare against [`planning/planning.md`](../planning/planning.md) (the pre-build commitments) and [`docs/reflection.md`](reflection.md) (post-build retrospective).
+How the U.S. Oil & Gas Production Intelligence dashboard is structured: data flow, AI integration design, components, and deployment shape. Companion documents: [`brd.md`](brd.md), [`prd.md`](prd.md), [`tdd.md`](tdd.md), [`kpi_definitions.md`](kpi_definitions.md), [`reflection.md`](reflection.md).
 
 ---
 
@@ -16,27 +16,24 @@ This document describes how the U.S. Oil & Gas Production Intelligence dashboard
 | AI | Google Gemini 2.5 Flash via `google-genai` SDK | Free tier; native function calling + structured outputs. |
 | Validation | Pydantic 2 | Tool input validation + structured AI output schema. |
 | Excel export | openpyxl | Workbook with KPI cells as live formulas. |
-| Testing | pytest | 73 hermetic tests; runs in <3s. |
+| Testing | pytest | Hermetic test suite; runs in <4s. |
 | Linting/formatting | ruff | All checks pass. |
 | Deploy | Streamlit Community Cloud | One-click GitHub-connected. |
 | Secrets | `.streamlit/secrets.toml` (gitignored) + Streamlit Cloud secrets | Standard pattern. |
 
-**Deviations from the plan:**
+**Notable design choices:**
 
-- **AI model:** the plan named `gemini-2.0-flash`. During build, that model returned `quota=0` on this API key — i.e. not on the free tier for this account. Probed the available models and switched to `gemini-2.5-flash`, which has a 5 RPM / 25 RPD free quota. Documented in `src/ai/client.py` with `MODEL_FALLBACKS` for future swaps.
-- **PADD coverage:** plan had us fetching just five named states; the user requested full national coverage during build, so we added all 5 PADDs + Federal Offshore GoM + 50 states + DC. The faceted-query approach made this a low-cost change.
-- **AI feature triggers:** plan had auto-summary firing on every region change. Free-tier rate limits made that infeasible; switched to on-demand button triggers for both auto-summary and anomaly detection. Conserves quota for explicit user actions during judging.
-
-**Tier 3 additions (beyond the original plan):**
-
-- **Tab restructure (UX):** original plan was single-page; added 5-tab layout (Overview / Compare / Map / Recommendations / About) so each Tier-3 feature has its own real estate without cluttering the headline view.
-- **Live commodity prices** (`src/data/prices.py`): WTI from `/petroleum/pri/spt/` (RWTC daily) and Henry Hub from `/natural-gas/pri/fut/` (RNGWHHD monthly). Promotes Revenue Potential from "illustrative constants" to "live, last-refreshed-N-days-ago." Falls back to constants on failure; UI discloses live vs illustrative.
+- **AI model: `gemini-2.5-flash`** via the `google-genai` SDK. Free tier with native function calling and structured outputs (`response_schema`). `MODEL_FALLBACKS` in `src/ai/client.py` documents alternatives if quota or availability changes for a future deploy.
+- **Region coverage:** all 50 states + DC + 5 PADDs + Federal Offshore Gulf of Mexico + U.S. national. Single faceted EIA query per product fetches the full set.
+- **AI feature triggers:** on-demand button clicks for auto-summary, anomaly explanation, and recommendations. Conserves free-tier quota and gives the user explicit control over when an LLM call fires.
+- **Tab structure:** five tabs (Overview / Compare / Map / Recommendations / About) so each capability has its own real estate without crowding the headline view.
+- **Live commodity prices** (`src/data/prices.py`): WTI from `/petroleum/pri/spt/` (RWTC daily) and Henry Hub from `/natural-gas/pri/fut/` (RNGWHHD monthly). Revenue Potential uses live values with as-of date in the header; falls back to constants if the live feed is unavailable.
 - **U.S. choropleth map tab** (`src/ui/map_view.py`): Plotly `locationmode="USA-states"` with YlOrRd color scale.
-- **Multi-region comparison tab** (`src/ui/compare_view.py`): 2-5 regions overlaid with distinct colors, side-by-side KPI table.
-- **AI investment recommendation engine** (`src/ai/recommend.py`): deterministic composite score ranks regions; LLM narrates top-5 with structured-output Pydantic schema. Filters out aggregates and tiny-base producers so the ranking is BD-meaningful.
-- **Walk-forward backtester** (`src/forecast/backtest.py`): every region's forecast accuracy measured by walking forward year-by-year and comparing predictions against actuals. Per-region MAPE displayed in the About tab.
+- **Multi-region comparison tab** (`src/ui/compare_view.py`): 2–5 regions overlaid with distinct colors, side-by-side KPI table.
+- **AI investment recommendation engine** (`src/ai/recommend.py`): deterministic composite score ranks regions; LLM narrates the top-N with a structured-output Pydantic schema. Aggregates and tiny-base producers are filtered out so the ranking is decision-grade.
+- **Walk-forward backtester** (`src/forecast/backtest.py`): forecast accuracy measured by walking forward year-by-year and comparing predictions against actuals. Per-region MAPE displayed in the About tab.
 - **At-a-glance header** (`src/ui/header.py`): 5-metric strip above the tabs always shows U.S. national context regardless of selection.
-- **Chart event annotations** (`src/ui/charts.py`): faint vertical-line annotations for 2014 oil-price collapse, 2020 COVID, 2022 OPEC+ recovery — only drawn when the event year is within the chart's x-range.
+- **Chart event annotations** (`src/ui/charts.py`): faint vertical-line annotations for 2014 oil-price collapse, 2020 COVID, and 2022 OPEC+ recovery — only drawn when the event year is within the chart's x-range.
 
 ---
 
@@ -139,7 +136,7 @@ energy-intelligence-system-vivekyagnikms/
 
 ### Core principle
 
-**Deterministic code computes; the LLM phrases.** The LLM is never the source of truth for any number, forecast, or anomaly classification. This is the single most important architectural decision for AI grade.
+**Deterministic code computes; the LLM phrases.** The LLM is never the source of truth for any number, forecast, or anomaly classification.
 
 ### Function calling, not RAG
 
@@ -171,7 +168,7 @@ Each tool has a `FunctionDeclaration` (Gemini schema), a Pydantic input model (s
 7. **No LLM forecasting** — forecasts come from `forecast/engine.py` only.
 8. **Tool-call iteration cap** — 5 calls per turn, after which we return what we have.
 9. **Refusal pattern** — system prompt requires a `REFUSAL:` prefix for off-topic; the UI detects it.
-10. **"Show grounding" toggle** — every AI response gets an expander listing every tool call and its raw output. Judges can audit any number.
+10. **"Show grounding" toggle** — every AI response gets an expander listing every tool call and its raw output. Any number on screen is auditable in one click.
 11. **Fallback display** — if validation fails, raw tool output is shown instead of LLM prose.
 12. **Rate-limit handling + circuit breaker** — exponential backoff; on persistent 429, swap session to mock-mode responses with a visible badge.
 13. **Mock-mode toggle** — `MOCK_AI=true` env var bypasses Gemini for development and testing.
@@ -197,19 +194,5 @@ The app has three nested fallback layers so it never hard-fails during a demo:
 
 For AI:
 1. **Live Gemini** with retry/backoff.
-2. **Circuit breaker** — after 3 failed retries, the next chat turn short-circuits to mock mode.
-3. **Mock responses** with visible "rate-limited" badge — the demo continues even when free-tier quota is exhausted.
-
----
-
-## What Changed From the Plan (in detail)
-
-| Change | Reason | Impact |
-|---|---|---|
-| Model: `gemini-2.0-flash` → `gemini-2.5-flash` | API key returned `quota=0` for 2.0-flash | Discovered during build via probe; documented `MODEL_FALLBACKS` |
-| Region scope: 5 states → all 50 + 5 PADDs + offshore + national | User request during build | More API calls but better domain coverage; faceted queries kept cost low |
-| AI feature triggers: automatic on selection change → on-demand button | 5 RPM Gemini free-tier limit | Conserves quota for explicit user actions during judging |
-| ARIMA fallback | Linear was sufficient (US R² 0.95, TX 0.95, PA-gas 0.90) | Skipped per the "drop if unnecessary" plan |
-| Auth/multi-user | Out of scope per plan | None |
-
-Everything else shipped as planned.
+2. **Circuit breaker** — after 3 failed retries, the next call short-circuits to mock mode.
+3. **Mock responses** with visible badge — the dashboard continues to function when free-tier quota is exhausted.

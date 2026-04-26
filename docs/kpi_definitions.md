@@ -2,17 +2,17 @@
 
 Every KPI surfaced in the dashboard. Formulas, units, sources, edge cases. The Excel export's "KPIs" sheet replicates these as live spreadsheet formulas so a user can edit historical values and watch the KPIs recompute.
 
-| KPI | Required? | Formula | Unit | Source code |
-|---|---|---|---|---|
-| Projected Production Estimate | ✅ Required | actual EIA value if year ≤ last full year, else linear-regression forecast | MBBL (crude) or MMCF (gas) | `kpis/calculators.py::get_actual_or_forecast` |
-| YoY Growth Rate | Custom | `(value[y] − value[y−1]) / value[y−1]` | decimal (0.10 = +10%) | `kpis/calculators.py::yoy_growth_rate` |
-| 5-year CAGR | Custom | `(value[y] / value[y−5])^(1/5) − 1` | decimal | `kpis/calculators.py::five_year_cagr` |
-| Volatility | Custom | `stdev(YoY%) / |mean(YoY%)|` over trailing 10 years | unitless ratio | `kpis/calculators.py::volatility` |
-| Revenue Potential (illustrative) | Custom | crude: `value × 1000 × WTI_USD_PER_BBL`; gas: `value × MMBTU_PER_MMCF × HENRY_HUB_USD_PER_MMBTU` | USD | `kpis/calculators.py::revenue_potential_usd` |
+| KPI | Formula | Unit | Source code |
+|---|---|---|---|
+| Projected Production Estimate | actual EIA value if year ≤ last full year, else linear-regression forecast | MBBL (crude) or MMCF (gas) | `kpis/calculators.py::get_actual_or_forecast` |
+| YoY Growth Rate | `(value[y] − value[y−1]) / value[y−1]` | decimal (0.10 = +10%) | `kpis/calculators.py::yoy_growth_rate` |
+| 5-year CAGR | `(value[y] / value[y−5])^(1/5) − 1` | decimal | `kpis/calculators.py::five_year_cagr` |
+| Volatility | `stdev(YoY%) / |mean(YoY%)|` over trailing 10 years | unitless ratio | `kpis/calculators.py::volatility` |
+| Revenue Potential | crude: `value × 1000 × WTI_USD_PER_BBL`; gas: `value × MMBTU_PER_MMCF × HENRY_HUB_USD_PER_MMBTU` | USD | `kpis/calculators.py::revenue_potential_usd` |
 
 ---
 
-## Projected Production Estimate (required)
+## Projected Production Estimate
 
 The headline number a BD analyst opens the dashboard for: *"how much oil/gas will this region produce in this year?"*
 
@@ -73,36 +73,38 @@ Higher = more boom/bust risk. Lower = smoother trajectory. A value of 1.0 means 
 - Fewer than 3 valid YoY observations are available (window too short).
 - The mean YoY is essentially zero (denominator collapses).
 
-**Window choice:** 10 years lets us include both boom and bust periods (e.g. 2014 oil-price collapse, 2020 COVID, 2022 OPEC+ recovery) for any region with sufficient history. Shorter windows oversold the volatility signal during quiet stretches.
+**Window choice:** 10 years lets us include both boom and bust periods (e.g. 2014 oil-price collapse, 2020 COVID, 2022 OPEC+ recovery) for any region with sufficient history.
 
 **Why coefficient of variation, not raw stdev:** a state with 2× another state's mean production would also have ~2× its raw stdev, even if relatively just as stable. Dividing by the mean makes regions comparable.
 
 ---
 
-## Revenue Potential (illustrative)
+## Revenue Potential
 
-Translates production volume into a dollar figure. **This is illustrative, not a live oil-price feed** — the price assumption is a configurable constant. Adding a live WTI/Henry Hub feed is a Tier-3 feature that was deliberately out of scope.
+Translates production volume into a dollar figure using live commodity spot prices from EIA, with deterministic fallback constants if the live feed is unavailable.
 
 **Formulas:**
 
 - **Crude oil:** `revenue = volume_MBBL × 1000 × WTI_USD_PER_BBL`
-  Constant: `WTI_USD_PER_BBL = 75.0` (a reasonable mid-cycle assumption).
 - **Natural gas:** `revenue = volume_MMCF × MMBTU_PER_MMCF × HENRY_HUB_USD_PER_MMBTU`
-  Constants: `MMBTU_PER_MMCF = 1030.0` (energy content), `HENRY_HUB_USD_PER_MMBTU = 3.00`.
+  - `MMBTU_PER_MMCF = 1030.0` (standard pipeline-quality natural-gas heat content)
 
-**Why these constants:**
+**Price source:**
 
-- WTI $75/bbl: roughly the rolling 24-month average at build time. Round number, easy to override.
-- Henry Hub $3.00/MMBtu: similar; round, defensible.
-- 1,030 MMBtu/MMCF: standard pipeline-quality natural-gas heat content. Slight regional variance is ignored.
+- **Live (preferred):** EIA spot prices —
+  - WTI: `/petroleum/pri/spt/data/`, series `RWTC` (daily)
+  - Henry Hub: `/natural-gas/pri/fut/data/`, series `RNGWHHD` (monthly)
+- **Fallback (only if live fetch fails):** `WTI = USD 75.00/bbl`, `Henry Hub = USD 3.00/MMBtu`. The UI surfaces the as-of date and live-vs-fallback status in the at-a-glance header.
 
-**Sensitivity slider:** a separate control in the UI lets the user shift the projected production volume by ±30% and watch revenue recompute. This is the cheap-but-useful answer to *"what if our volume assumption is X% off?"*.
+**Sensitivity controls:**
+- A 1D slider stress-tests volume ±30%.
+- A 2D heatmap stress-tests volume ±30% × price ±30% — color-coded red→green by revenue.
 
 ---
 
 ## Why these five KPIs?
 
-A BD analyst evaluating regional opportunities asks four questions:
+A BD analyst evaluating regional opportunities asks five questions:
 
 | Question | KPI |
 |---|---|
@@ -121,4 +123,4 @@ Each KPI maps to one decision-relevant question. Adding more would clutter the d
 - All five KPIs as independent pure functions in [`src/kpis/calculators.py`](../src/kpis/calculators.py).
 - `compute_kpi_set` bundles them all for one `(region, product, year)` and is what the UI calls.
 - Each function is independently exposed to the AI tool router via `get_kpis` in [`src/ai/tools.py`](../src/ai/tools.py).
-- 17 unit tests in [`tests/test_kpis.py`](../tests/test_kpis.py) cover each KPI's happy path and edge cases.
+- Unit tests in [`tests/test_kpis.py`](../tests/test_kpis.py) cover each KPI's happy path and edge cases.

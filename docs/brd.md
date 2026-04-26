@@ -72,20 +72,16 @@ A static dashboard answers (1) and (2) but misses (3) and (4). The system must c
 - Persistent user storage (watchlists, saved sessions).
 - Mobile-first responsive design (desktop-first; mobile works but not optimized).
 
-## 6. Success Criteria (graded against the rubric)
+## 6. Success Criteria
 
-| Tier | Threshold |
-|---|---|
-| Good | All Tier 1 functional; live URL works at deadline |
-| Great | Above + 2+ Tier 2 features; custom KPIs surfaced; thoughtful prompt engineering; strong viz |
-| **Outstanding (target)** | Above + novel approaches in either forecasting or AI integration + production-quality code + onboarding-grade docs |
+The system is "successful" when a BD analyst can:
 
-Specific success thresholds we held ourselves to:
-- All 5 Tier-2 differentiators shipped (custom KPIs, Excel export, sensitivity heatmap, provenance, live refresh).
-- Five Tier-3 differentiators shipped (choropleth map, multi-region compare, live commodity prices, AI investment recommendation engine, walk-forward backtester).
-- 90+ hermetic tests passing, ruff-clean.
-- Walk-forward backtest MAPE in single-digit percent for stable regions.
-- AI output cross-checked numerically; refusal pattern works under prompt-injection attempts.
+- Open the live URL and reach a defendable single-region opinion in under 5 minutes.
+- Compare 2–5 regions side-by-side without leaving the dashboard.
+- Get an AI-generated narrative whose numbers match the data on screen.
+- Export the analysis to Excel and continue working in their familiar toolchain.
+- Verify the source of any number on screen (provenance + grounding panel).
+- Trust the forecasts: walk-forward backtest is visible and per-region MAPE for stable regions sits in the single-digit-percent range.
 
 ## 7. Constraints
 
