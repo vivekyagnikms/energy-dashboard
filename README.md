@@ -94,7 +94,6 @@ The app opens at <http://localhost:8501>. First fetch from EIA takes ~10 seconds
 | [`docs/kpi_definitions.md`](docs/kpi_definitions.md) | Every KPI's formula, unit, edge cases. |
 | [`docs/insights.md`](docs/insights.md) | Decision-grade insights surfaced by the system. |
 | [`docs/walkthrough.md`](docs/walkthrough.md) | Walkthrough video link and script. |
-| [`docs/reflection.md`](docs/reflection.md) | Build notes — scope shipped, design choices, AI tools used. |
 
 ---
 
@@ -131,6 +130,12 @@ pytest -q
 ```
 
 Hermetic test suite (no live EIA / Gemini calls), runs in <4 seconds. Coverage spans data normalization, forecast engine math + edges, backtester, every KPI, AI tool router, AI regression with adversarial prompts, recommendation engine, live-price fallback contract, security input + log redaction, full-pipeline integration, and end-to-end import smoke.
+
+---
+
+## AI tools used during development
+
+Claude (Anthropic) was used as a coding assistant for scaffolding, schema generation, test drafting, and documentation drafts (with human review). API keys were never visible to the AI assistant; they live in `.streamlit/secrets.toml` (gitignored) locally and in Streamlit Cloud's secrets manager in production.
 
 ---
 
