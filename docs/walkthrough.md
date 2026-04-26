@@ -1,6 +1,8 @@
 # Walkthrough Video
 
-**Video link:** _to be inserted after recording (Phase 11)._
+**🌐 Live demo:** <https://energy-platform.streamlit.app/>
+
+**🎥 Video link:** _to be inserted after recording (Phase 11)._
 
 5-minute screen recording covering the live deployed dashboard, the technical architecture, and key tradeoffs.
 

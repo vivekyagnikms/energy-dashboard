@@ -1,6 +1,6 @@
 # U.S. Oil & Gas Production Intelligence
 
-**Live demo:** _add Streamlit Cloud URL here after deploy_
+**🌐 Live demo:** **<https://energy-platform.streamlit.app/>**
 
 A 5-tab Streamlit dashboard that helps a business-development analyst evaluate U.S. oil-and-gas production opportunities by region, with grounded AI analysis on top.
 
