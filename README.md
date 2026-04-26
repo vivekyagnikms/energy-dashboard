@@ -87,8 +87,12 @@ The app opens at <http://localhost:8501>. First fetch from EIA takes ~10 seconds
 | [`src/utils/`](src/utils/) | Cache, Excel export with formulas, input sanitization. |
 | [`tests/`](tests/) | **91 hermetic tests**, runs in <4 seconds. |
 | [`planning/planning.md`](planning/planning.md) | Pre-build plan (judges compare this against the final state). |
-| [`docs/architecture.md`](docs/architecture.md) | Final architecture; data flow; 13 AI guardrails; backtesting; recommendation scoring. |
+| [`docs/brd.md`](docs/brd.md) | Business Requirements Document — stakeholders, business problem, objectives, scope. |
+| [`docs/prd.md`](docs/prd.md) | Product Requirements Document — personas, user stories, features, NFRs, acceptance criteria. |
+| [`docs/tdd.md`](docs/tdd.md) | Technical Design Document — data model, API contracts, components, deployment, runbook. |
+| [`docs/architecture.md`](docs/architecture.md) | Architecture summary; data flow; 13 AI guardrails. |
 | [`docs/kpi_definitions.md`](docs/kpi_definitions.md) | Every KPI's formula, unit, edge cases. |
+| [`docs/insights.md`](docs/insights.md) | Seven decision-grade insights surfaced by the system. |
 | [`docs/walkthrough.md`](docs/walkthrough.md) | 5-minute video link + script. |
 | [`docs/reflection.md`](docs/reflection.md) | Honest post-build retrospective. |
 

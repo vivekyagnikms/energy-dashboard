@@ -1,0 +1,115 @@
+# Business Requirements Document (BRD)
+
+**Project:** U.S. Oil & Gas Production Intelligence System
+**Sponsor:** CDF Energy AI Hackathon
+**Author:** Vivek Yagnik
+**Status:** Submitted (April 2026)
+
+---
+
+## 1. Business Context
+
+CDF Energy invests across U.S. oil and gas opportunities. Their **business-development analysts** are responsible for evaluating which producing regions warrant capital and which to deprioritize. Today this evaluation lives in:
+
+- A patchwork of EIA monthly reports, state oil-and-gas-commission spreadsheets, and analyst-built Excel models
+- Tribal knowledge held by senior analysts (which years had macro shocks, which basins are mature vs growth)
+- Slow, error-prone iteration — re-running comparisons across regions takes hours, not minutes
+
+CDF wants to compress that cycle from "hours of spreadsheet work + senior reviews" to "minutes of dashboard interaction with grounded AI assistance" — without trading accuracy for speed.
+
+## 2. Business Problem Statement
+
+> **A BD analyst at CDF Energy needs to evaluate U.S. oil-and-gas regional opportunities in real time, with confidence in the underlying numbers and the ability to defend recommendations to investment committees.**
+
+Specifically, the analyst needs to answer four decision-grade questions for any region:
+
+1. *How much will this region produce next year? In five years?*
+2. *Is the trend accelerating, decelerating, or volatile?*
+3. *How does it compare to peer regions on the same metrics?*
+4. *Where should I focus my next investment thesis?*
+
+A static dashboard answers (1) and (2) but misses (3) and (4). The system must close the loop with structured AI analysis, not just charts.
+
+## 3. Business Objectives
+
+| # | Objective | Measure of success |
+|---|---|---|
+| BO-1 | Compress regional evaluation cycle | <5 minutes from URL load to a defendable recommendation |
+| BO-2 | Eliminate "is this number right?" friction | Every figure in the UI is traceable to source (EIA endpoint + date) |
+| BO-3 | Let AI accelerate without introducing trust risk | Numerical claims in AI output are cross-checked against tool-returned values |
+| BO-4 | Make outputs portable to existing analyst workflows | Excel export with KPI cells as live formulas |
+| BO-5 | Cover the full U.S. opportunity surface | All 50 states + DC + 5 PADDs + Federal Offshore GoM, both crude and natural gas |
+| BO-6 | Make forecast quality visible, not assumed | Walk-forward backtesting per region with public MAPE figures |
+
+## 4. Stakeholders
+
+| Stakeholder | Role | Primary interest |
+|---|---|---|
+| Business-development analyst | End user | Speed, confidence, defensibility |
+| Investment committee | Consumer of analyst output | Clarity, repeatability of methodology |
+| CDF Energy leadership | Hackathon sponsor | Demonstrated AI engineering judgment |
+| Hackathon judges | Evaluator | Tier 1/2/3 completeness, novelty, code quality |
+| Future maintainer (hypothetical) | Engineering ops | Onboarding-grade documentation, hermetic tests |
+
+## 5. Scope
+
+### In scope
+- U.S. crude oil and natural gas annual production data, 2010 → present, all states + national + PADDs + Federal Offshore GoM.
+- Linear-regression forecasting with 95% confidence band, 10-year horizon cap.
+- 5 KPIs (1 required + 4 custom) with formal definitions.
+- Live commodity prices (WTI, Henry Hub) feeding Revenue Potential.
+- AI features: conversational analyst (function-calling chat), auto-summary, anomaly detection + explanation, investment recommendation engine.
+- Excel export with live formulas, 2D sensitivity heatmap, walk-forward backtest viz.
+- Hosted live URL on Streamlit Cloud, free-tier compatible.
+- Comprehensive documentation: BRD, PRD, TDD, planning, KPI definitions, walkthrough script, reflection, key insights.
+
+### Out of scope
+- Authentication, multi-tenant, RBAC.
+- Proprietary data sources (per problem statement rule).
+- Production-grade observability (metrics, traces, paging).
+- International data (out-of-scope per problem statement).
+- Real-time streaming or sub-monthly granularity.
+- Persistent user storage (watchlists, saved sessions).
+- Mobile-first responsive design (desktop-first; mobile works but not optimized).
+
+## 6. Success Criteria (graded against the rubric)
+
+| Tier | Threshold |
+|---|---|
+| Good | All Tier 1 functional; live URL works at deadline |
+| Great | Above + 2+ Tier 2 features; custom KPIs surfaced; thoughtful prompt engineering; strong viz |
+| **Outstanding (target)** | Above + novel approaches in either forecasting or AI integration + production-quality code + onboarding-grade docs |
+
+Specific success thresholds we held ourselves to:
+- All 5 Tier-2 differentiators shipped (custom KPIs, Excel export, sensitivity heatmap, provenance, live refresh).
+- Five Tier-3 differentiators shipped (choropleth map, multi-region compare, live commodity prices, AI investment recommendation engine, walk-forward backtester).
+- 90+ hermetic tests passing, ruff-clean.
+- Walk-forward backtest MAPE in single-digit percent for stable regions.
+- AI output cross-checked numerically; refusal pattern works under prompt-injection attempts.
+
+## 7. Constraints
+
+| Constraint | Source | Implication |
+|---|---|---|
+| 1-day build | Self-imposed (compressed timeline) | Tight prioritization; chose Streamlit over Next.js, linear regression over ML |
+| Free-tier APIs only | Hackathon rule | Gemini 2.5 Flash (5 RPM cap) → on-demand AI buttons + circuit-breaker mock fallback |
+| Public data only | Hackathon rule | EIA API v2 as primary source; combined with EIA spot-price endpoints |
+| Live URL mandatory at deadline | Hackathon rule | Streamlit Cloud GitHub-connected deploy; auto-redeploy on push |
+| Solo developer | Project context | One language end-to-end (Python); minimize moving parts |
+
+## 8. Risks & Mitigations (business-level)
+
+| Risk | Mitigation |
+|---|---|
+| AI hallucinated numbers undermine trust | Mandatory tool calls + ±1% number cross-check + show-grounding panel |
+| Live demo fails at judging | 3-layer data resilience (cache → API → seed); 3-layer AI resilience (live → backoff → mock) |
+| Free-tier rate limit hit during demo | Per-session caps; on-demand AI triggers; circuit breaker |
+| Forecast looks confident but is wrong | Walk-forward backtester + per-region MAPE; confidence band widens automatically with volatility |
+| Numbers in dashboard differ from EIA published | Unit-handling explicitly tested (MBBL vs MBBL/D filter); sanity-checks against published US national figures during build |
+
+## 9. Dependencies
+
+- EIA Open Data API (free key; no SLA, but stable)
+- Google AI Studio (Gemini 2.5 Flash on free tier)
+- Streamlit Community Cloud (free hosting)
+- GitHub (code + auto-redeploy webhook)
