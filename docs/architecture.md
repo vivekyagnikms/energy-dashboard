@@ -1,6 +1,6 @@
 # Architecture Overview
 
-How the U.S. Oil & Gas Production Intelligence dashboard is structured: data flow, AI integration design, components, and deployment shape. Companion documents: [`brd.md`](brd.md), [`prd.md`](prd.md), [`tdd.md`](tdd.md), [`kpi_definitions.md`](kpi_definitions.md), [`reflection.md`](reflection.md).
+How the U.S. Oil & Gas Production Intelligence dashboard is structured: data flow, AI integration design, components, and deployment shape. Companion documents: [`brd.md`](brd.md), [`prd.md`](prd.md), [`tdd.md`](tdd.md), [`kpi_definitions.md`](kpi_definitions.md), [`case_study.md`](case_study.md).
 
 ---
 
@@ -59,7 +59,7 @@ energy-intelligence-system-vivekyagnikms/
 │   │   └── calculators.py        # required + 4 custom KPIs as pure functions
 │   ├── ai/
 │   │   ├── client.py             # Gemini wrapper, retry/backoff, mock toggle, circuit breaker
-│   │   ├── tools.py              # 6 FunctionDeclarations + Pydantic schemas + dispatch table
+│   │   ├── tools.py              # 7 FunctionDeclarations + Pydantic schemas + dispatch table
 │   │   ├── chat.py               # function-calling loop, system prompt, number cross-check, refusal detection
 │   │   ├── summarize.py          # auto-summary with structured output + deterministic fallback
 │   │   ├── anomaly.py            # statistical detection + LLM narrative explainer
@@ -87,7 +87,7 @@ energy-intelligence-system-vivekyagnikms/
 │   ├── test_security.py          # 12 input-sanitization, log-redaction, refusal-contract tests
 │   ├── test_integration.py       # 3 full-pipeline tests (rows → normalize → forecast → KPIs)
 │   └── test_e2e_smoke.py         # 5 import-graph tests (catches deploy-killing import errors)
-├── docs/                         # this file + KPIs + walkthrough + reflection
+├── docs/                         # this file + BRD/PRD/TDD + KPIs + case study + insights
 └── planning/planning.md          # pre-build commitments
 ```
 
@@ -107,7 +107,7 @@ energy-intelligence-system-vivekyagnikms/
                      └──────────────┘       │
                             ▲                ├────► forecast/engine.py (per call, microseconds)
                             │                ├────► kpis/calculators.py (pure functions)
-                            │                ├────► ai/tools.py (6 tools register)
+                            │                ├────► ai/tools.py (7 tools register)
             ┌───────────────┴─────┐          │
             │  data/cache/        │          ▼
             │  data/seed/.parquet │     Streamlit UI (sidebar selection drives everything)
@@ -118,7 +118,7 @@ energy-intelligence-system-vivekyagnikms/
                                                       │ on-demand button click
                                         ┌─────────────┴─────────────────┐
                                         │  Gemini 2.5 Flash             │
-                                        │  • function calling (6 tools) │
+                                        │  • function calling (7 tools) │
                                         │  • response_schema (summary,  │
                                         │    anomaly explanations)      │
                                         │  • mock fallback on 429       │
@@ -128,7 +128,7 @@ energy-intelligence-system-vivekyagnikms/
 **Two concrete data-flow examples:**
 
 1. **User changes the year slider.** `Selection` is rebuilt. `compute_kpi_set` recomputes the four KPIs (every call inspects the same in-memory DataFrame; ~milliseconds). The chart re-renders the same history but the dotted "selected year" marker moves. No API or LLM calls.
-2. **User asks the chat "Compare Texas and North Dakota crude in 2023".** `run_chat_turn` builds a contents list with the system prompt + 6 tool schemas + user message. Gemini returns a `function_call(compare_regions, regions=["Texas","North Dakota"], product="crude_oil", year=2023)`. The dispatch validates inputs against `CompareRegionsInput` (Pydantic), runs `compare_regions_impl(df, engine, args)` which queries the same DataFrame the UI is showing, and returns a typed dict. That dict is sent back to Gemini as a `function_response`; Gemini phrases the answer using only those numbers. The chat layer then regex-extracts numeric tokens from the answer and cross-checks each against the tool's returned values; matches within ±1% are "verified", others surface a `⚠ Unverified figure` warning in the grounding expander.
+2. **User asks the chat "Compare Texas and North Dakota crude in 2023".** `run_chat_turn` builds a contents list with the system prompt + 7 tool schemas + user message. Gemini returns a `function_call(compare_regions, regions=["Texas","North Dakota"], product="crude_oil", year=2023)`. The dispatch validates inputs against `CompareRegionsInput` (Pydantic), runs `compare_regions_impl(df, engine, args)` which queries the same DataFrame the UI is showing, and returns a typed dict. That dict is sent back to Gemini as a `function_response`; Gemini phrases the answer using only those numbers. The chat layer then regex-extracts numeric tokens from the answer and cross-checks each against the tool's returned values; matches within ±1% are "verified", others surface a `⚠ Unverified figure` warning in the grounding expander.
 
 ---
 
@@ -140,7 +140,7 @@ energy-intelligence-system-vivekyagnikms/
 
 ### Function calling, not RAG
 
-Gemini gets six function tools defined in `src/ai/tools.py`:
+Gemini gets seven function tools defined in `src/ai/tools.py`:
 
 | Tool | Returns |
 |---|---|
@@ -150,6 +150,7 @@ Gemini gets six function tools defined in `src/ai/tools.py`:
 | `get_kpis(region, product, year)` | Full KPI bundle |
 | `get_anomalies(region, product, z_threshold)` | Statistically flagged years (z-score on YoY %) |
 | `list_regions(group?)` | Available regions with `has_data` flag |
+| `top_producers(product, year, metric, n)` | Top-N regions by production / revenue / growth |
 
 Each tool has a `FunctionDeclaration` (Gemini schema), a Pydantic input model (server-side validation), and a Python implementation that operates on the same `pd.DataFrame` and `ForecastEngine` the UI uses. So the AI is grounded in *the exact data the user sees on screen*.
 
@@ -176,7 +177,7 @@ Each tool has a `FunctionDeclaration` (Gemini schema), a Pydantic input model (s
 ### Prompt engineering
 
 System prompts are intentionally short and rule-driven:
-- **Chat (~600 words):** lists the six tools, mandates tool use, defines the refusal contract, requires unit citations.
+- **Chat (~600 words):** lists the seven tools, mandates tool use, defines the refusal contract, requires unit citations.
 - **Auto-summary (~250 words):** describes the JSON schema fields, gives concrete confidence-label rules (`'low' if R^2 < 0.5 or n < 8 or volatility > 1`).
 - **Anomaly explanations (~200 words):** instructs to write 1-2 sentence per-year explanations citing plausible industry events; forbids inventing dates or dollar figures.
 

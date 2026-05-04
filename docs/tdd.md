@@ -92,7 +92,7 @@ Every component downstream of `loader.py` consumes a `pd.DataFrame` matching `sr
 
 **Quota:** 5 RPM, 25 RPD on free tier. Strategy: every AI feature is on-demand (button click), not auto-fire on selection change. Per-session message cap of 30.
 
-**Function calling:** 6 tools registered (`get_production`, `get_history`, `compare_regions`, `get_kpis`, `get_anomalies`, `list_regions`). Each is declared as a `genai_types.FunctionDeclaration` with explicit JSON schema.
+**Function calling:** 7 tools registered (`get_production`, `get_history`, `compare_regions`, `get_kpis`, `get_anomalies`, `list_regions`, `top_producers`). Each is declared as a `genai_types.FunctionDeclaration` with explicit JSON schema.
 
 **Structured outputs:** `auto_summary`, `anomaly_explanation`, `recommendation` features pass `response_schema` (Pydantic) + `response_mime_type="application/json"` so the model returns parseable JSON.
 
@@ -117,7 +117,7 @@ src/
 │   └── calculators.py - 5 KPIs + KPISet bundle
 ├── ai/           # Layer 4: AI orchestration (function calling + structured outputs)
 │   ├── client.py      - Gemini wrapper, retry, circuit breaker, mock toggle
-│   ├── tools.py       - 6 tools with Pydantic input validation
+│   ├── tools.py       - 7 tools with Pydantic input validation
 │   ├── chat.py        - conversational chat loop with guardrails
 │   ├── summarize.py   - auto-summary feature
 │   ├── anomaly.py     - detection (statistical) + explanation (LLM)

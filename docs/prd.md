@@ -172,8 +172,7 @@ The product is "done" when all of the following hold simultaneously:
 - AI features produce grounded answers; the show-grounding panel reveals every tool call.
 - Hermetic test suite passes; ruff format + lint clean.
 - Live URL accessible; performance targets in §5 met.
-- Documentation set complete: planning, BRD, PRD, TDD, architecture, KPI definitions, insights, walkthrough, reflection.
-- Walkthrough video linked from README and walkthrough.md.
+- Documentation set complete: planning, BRD, PRD, TDD, architecture, KPI definitions, insights, case study.
 
 ## 8. Product KPIs (success metrics for the product itself)
 
