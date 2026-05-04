@@ -2,9 +2,7 @@
 
 **🌐 Live demo:** **<https://energy-platform.streamlit.app/>**
 
-A 5-tab Streamlit dashboard that helps a business-development analyst evaluate U.S. oil-and-gas production opportunities by region, with grounded AI analysis on top.
-
-> **Submission for the CDF Energy AI Hackathon (April 2026).** Python, Streamlit, EIA's API, and Gemini 2.5 Flash.
+A 5-tab Streamlit dashboard that helps a business-development analyst evaluate U.S. oil-and-gas production opportunities by region, with grounded AI analysis on top. Built with Python, Streamlit, the EIA API, and Gemini 2.5 Flash.
 
 📝 **Read the full case study:** [`docs/case_study.md`](docs/case_study.md) — the design principle, three tradeoffs in depth, and the 13-layer guardrail stack as one continuous narrative.
 
@@ -155,7 +153,7 @@ Even if EIA is down and Gemini is rate-limited, the seed snapshot and mock layer
 ## Quickstart (local)
 
 ```bash
-git clone https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms.git
+git clone https://github.com/vivekyagnikms/energy-dashboard.git
 cd energy-intelligence-system-vivekyagnikms
 
 python -m venv .venv

@@ -1,7 +1,7 @@
 # Business Requirements Document (BRD)
 
 **Project:** U.S. Oil & Gas Production Intelligence System
-**Sponsor:** CDF Energy AI Hackathon
+**Sponsor:** the hackathon
 **Author:** Vivek Yagnik
 **Status:** Submitted (April 2026)
 
@@ -9,17 +9,17 @@
 
 ## 1. Business Context
 
-CDF Energy invests across U.S. oil and gas opportunities. Their **business-development analysts** are responsible for evaluating which producing regions warrant capital and which to deprioritize. Today this evaluation lives in:
+A U.S. energy investor invests across U.S. oil and gas opportunities. Their **business-development analysts** are responsible for evaluating which producing regions warrant capital and which to deprioritize. Today this evaluation lives in:
 
 - A patchwork of EIA monthly reports, state oil-and-gas-commission spreadsheets, and analyst-built Excel models
 - Tribal knowledge held by senior analysts (which years had macro shocks, which basins are mature vs growth)
 - Slow, error-prone iteration — re-running comparisons across regions takes hours, not minutes
 
-CDF wants to compress that cycle from "hours of spreadsheet work + senior reviews" to "minutes of dashboard interaction with grounded AI assistance" — without trading accuracy for speed.
+The firm wants to compress that cycle from "hours of spreadsheet work + senior reviews" to "minutes of dashboard interaction with grounded AI assistance" — without trading accuracy for speed.
 
 ## 2. Business Problem Statement
 
-> **A BD analyst at CDF Energy needs to evaluate U.S. oil-and-gas regional opportunities in real time, with confidence in the underlying numbers and the ability to defend recommendations to investment committees.**
+> **A BD analyst at a U.S. energy investor needs to evaluate U.S. oil-and-gas regional opportunities in real time, with confidence in the underlying numbers and the ability to defend recommendations to investment committees.**
 
 Specifically, the analyst needs to answer four decision-grade questions for any region:
 
@@ -47,7 +47,7 @@ A static dashboard answers (1) and (2) but misses (3) and (4). The system must c
 |---|---|---|
 | Business-development analyst | End user | Speed, confidence, defensibility |
 | Investment committee | Consumer of analyst output | Clarity, repeatability of methodology |
-| CDF Energy leadership | Sponsor | Demonstrated AI engineering judgment |
+| firm leadership | Sponsor | Demonstrated AI engineering judgment |
 | Future maintainer | Engineering ops | Onboarding-grade documentation, hermetic tests |
 
 ## 5. Scope

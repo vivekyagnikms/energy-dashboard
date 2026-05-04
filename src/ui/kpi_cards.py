@@ -120,13 +120,13 @@ def render_kpi_cards(kpis: KPISet) -> None:
             """
 | KPI | Formula | Code |
 |---|---|---|
-| **Projected Production** | Actual EIA value if past full year, else linear-regression forecast | [`kpis/calculators.py::get_actual_or_forecast`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/src/kpis/calculators.py) |
-| **YoY Growth** | `(value[y] − value[y−1]) / value[y−1]` | [`yoy_growth_rate`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/src/kpis/calculators.py) |
-| **5-yr CAGR** | `(value[y] / value[y−5])^(1/5) − 1` | [`five_year_cagr`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/src/kpis/calculators.py) |
-| **Volatility** | `stdev(YoY%) / |mean(YoY%)|` over trailing 10 years | [`volatility`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/src/kpis/calculators.py) |
-| **Revenue Potential** | `volume × price` (live WTI / Henry Hub if available, else illustrative constant) | [`revenue_potential_usd`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/src/kpis/calculators.py) |
+| **Projected Production** | Actual EIA value if past full year, else linear-regression forecast | [`kpis/calculators.py::get_actual_or_forecast`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/src/kpis/calculators.py) |
+| **YoY Growth** | `(value[y] − value[y−1]) / value[y−1]` | [`yoy_growth_rate`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/src/kpis/calculators.py) |
+| **5-yr CAGR** | `(value[y] / value[y−5])^(1/5) − 1` | [`five_year_cagr`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/src/kpis/calculators.py) |
+| **Volatility** | `stdev(YoY%) / |mean(YoY%)|` over trailing 10 years | [`volatility`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/src/kpis/calculators.py) |
+| **Revenue Potential** | `volume × price` (live WTI / Henry Hub if available, else illustrative constant) | [`revenue_potential_usd`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/src/kpis/calculators.py) |
 
-Full definitions in [`docs/kpi_definitions.md`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/docs/kpi_definitions.md).
+Full definitions in [`docs/kpi_definitions.md`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/docs/kpi_definitions.md).
 
 **Source data:** EIA API v2 — `petroleum/crd/crpdn` (crude, MBBL) and
 `natural-gas/prod/sum` (gas, MMCF). Aggregated monthly → annual.

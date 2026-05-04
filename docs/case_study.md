@@ -1,7 +1,7 @@
 # Case Study: Building an AI Analyst That Can't Make Up Numbers
 
 **Project:** U.S. Oil & Gas Production Intelligence Dashboard
-**Built for:** CDF Energy AI Hackathon, April 2026
+**Built for:** the hackathon, April 2026
 **Stack:** Python · Streamlit · EIA API v2 · scikit-learn · Google Gemini 2.5 Flash · Plotly · Pydantic
 **Live demo:** <https://energy-platform.streamlit.app/>
 

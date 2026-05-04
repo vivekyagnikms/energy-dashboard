@@ -220,10 +220,10 @@ def render_about_tab(
     st.markdown(
         """
 - **Forecast model:** linear regression on annual full-year totals, ±1.96σ confidence band.
-  Partial current year excluded from training. See [`src/forecast/engine.py`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/src/forecast/engine.py).
+  Partial current year excluded from training. See [`src/forecast/engine.py`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/src/forecast/engine.py).
 - **AI grounding:** Gemini 2.5 Flash with mandatory tool calls; every numeric token in the
-  final answer is cross-checked against tool returns within ±1%. 13 guardrail layers documented in [`docs/architecture.md`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/docs/architecture.md).
-- **KPI definitions:** [`docs/kpi_definitions.md`](https://github.com/Community-Dreams-Foundation-Hackathons/energy-intelligence-system-vivekyagnikms/blob/main/docs/kpi_definitions.md).
+  final answer is cross-checked against tool returns within ±1%. 13 guardrail layers documented in [`docs/architecture.md`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/docs/architecture.md).
+- **KPI definitions:** [`docs/kpi_definitions.md`](https://github.com/vivekyagnikms/energy-dashboard/blob/main/docs/kpi_definitions.md).
 - **Resilience:** parquet cache (24h) → live API → bundled seed snapshot (1,231 rows committed in `data/seed/`). The demo never hard-fails.
         """
     )
